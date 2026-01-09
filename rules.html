@@ -1,0 +1,172 @@
+<!-- =========================
+     rules.html
+     ========================= -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#070b12" />
+  <title>Rules • Complex Solutions Ladder</title>
+
+  <!-- Inter font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  />
+
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- FontAwesome (optional) -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+  />
+
+  <script defer src="script.js"></script>
+
+  <script>
+    // Simple accordion toggle for rules sections (no dependencies)
+    document.addEventListener("DOMContentLoaded", () => {
+      document.querySelectorAll(".rules-section").forEach((sec) => {
+        sec.addEventListener("click", () => {
+          sec.classList.toggle("open");
+          const content = sec.querySelector(".rules-content");
+          if (!content) return;
+          content.classList.toggle("hide");
+        });
+      });
+
+      // Open first section by default
+      const first = document.querySelector(".rules-section");
+      if (first) {
+        first.classList.add("open");
+        const content = first.querySelector(".rules-content");
+        if (content) content.classList.remove("hide");
+      }
+    });
+  </script>
+</head>
+
+<body id="rules-page">
+  <header class="container">
+    <div class="header-title">
+      <h1>Rules</h1>
+      <div class="name">Clear rules • No drama • One ladder</div>
+      <p>
+        These rules keep the ladder competitive, fair, and easy to manage. The server validates
+        challenges automatically when you submit a match.
+      </p>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="card search-bar" style="margin-bottom: var(--space-3);">
+      <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+      <input
+        id="ruleSearch"
+        type="text"
+        placeholder="Search rules… (e.g. “challenge”, “swap”, “best of 3”)"
+        aria-label="Search rules"
+      />
+    </div>
+
+    <div class="rules-section card rule-card">
+      <h3>1) Match Format</h3>
+      <div class="rules-content hide">
+        <p><strong>Best of 3.</strong> First to <strong>2</strong> games wins the match.</p>
+        <p>Log the final match score as <strong>2–0</strong> or <strong>2–1</strong>.</p>
+      </div>
+    </div>
+
+    <div class="rules-section card rule-card">
+      <h3>2) Who You Can Challenge</h3>
+      <div class="rules-content hide">
+        <p>
+          You may challenge someone ranked up to <strong>2 positions above you</strong>.
+          That means you can challenge the player <strong>1</strong> spot above or <strong>2</strong>
+          spots above — not more.
+        </p>
+        <p>
+          The system checks this automatically and records whether the challenge was allowed.
+          If it’s not allowed, the match can still be logged, but it won’t swap the ladder.
+        </p>
+      </div>
+    </div>
+
+    <div class="rules-section card rule-card">
+      <h3>3) Swap Rule</h3>
+      <div class="rules-content hide">
+        <p>
+          If the challenger wins an <strong>allowed</strong> challenge, the challenger and defender
+          <strong>swap positions</strong>.
+        </p>
+        <p>If the defender wins, the ladder stays the same.</p>
+      </div>
+    </div>
+
+    <div class="rules-section card rule-card">
+      <h3>4) Stats & Streaks</h3>
+      <div class="rules-content hide">
+        <p>
+          Every match updates each player’s <strong>wins</strong>, <strong>losses</strong>,
+          <strong>streak</strong> and <strong>last played</strong>.
+        </p>
+        <p>
+          Streaks are tracked as a number:
+          <strong>+3</strong> means three wins in a row, <strong>-2</strong> means two losses in a row.
+        </p>
+      </div>
+    </div>
+
+    <div class="rules-section card rule-card">
+      <h3>5) Integrity</h3>
+      <div class="rules-content hide">
+        <p>
+          Log matches honestly. If there’s a dispute, replay the match.
+          Keep it friendly — we’re here to compete, not to create admin.
+        </p>
+      </div>
+    </div>
+
+    <div class="rules-section card rule-card">
+      <h3>6) What Happens If The Site Can’t Save?</h3>
+      <div class="rules-content hide">
+        <p>
+          If your internet is down or Google Apps Script is temporarily unavailable,
+          the match is saved <strong>locally</strong> on your device as “pending”.
+        </p>
+        <p>
+          Use <strong>Sync pending</strong> (on the matches page / add match page utility bar)
+          to upload pending matches later.
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <nav class="bottom-nav" aria-label="Primary navigation">
+    <a href="index.html">
+      <span class="nav-icon">📊</span>
+      <span>Leaderboard</span>
+    </a>
+    <a href="add-match.html">
+      <span class="nav-icon">➕</span>
+      <span>Add Match</span>
+    </a>
+    <a href="matches.html">
+      <span class="nav-icon">🕑</span>
+      <span>Matches</span>
+    </a>
+    <a href="awards.html">
+      <span class="nav-icon">🏆</span>
+      <span>Awards</span>
+    </a>
+    <a href="rules.html" class="active">
+      <span class="nav-icon">📖</span>
+      <span>Rules</span>
+    </a>
+  </nav>
+</body>
+</html>

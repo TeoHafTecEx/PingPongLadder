@@ -1,0 +1,81 @@
+<!-- =========================
+     awards.html
+     ========================= -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#070b12" />
+  <title>Awards • Complex Solutions Ladder</title>
+
+  <!-- Inter font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  />
+
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- FontAwesome (optional) -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+  />
+
+  <script defer src="script.js"></script>
+</head>
+
+<body id="awards-page">
+  <header class="container">
+    <div class="header-title">
+      <h1>Awards</h1>
+      <div class="name">Bragging rights • Updated automatically</div>
+      <p>
+        These awards are calculated from the live ladder and match history.
+        Log matches to update the stats.
+      </p>
+    </div>
+  </header>
+
+  <main class="container">
+    <h2 class="section-title">Highlights</h2>
+    <div id="awardsContainer" style="display:grid; gap: 12px;" aria-live="polite"></div>
+
+    <div class="card" style="margin-top: var(--space-4);">
+      <h2 style="margin-bottom: 10px;">Award Logic</h2>
+      <p style="margin-bottom: 0;">
+        Awards are computed from the current player stats and match list:
+        <strong>Most Wins</strong>, <strong>Best Streak</strong>,
+        <strong>Giant Killers</strong> (winning a 2-position challenge),
+        and <strong>Most Active</strong>.
+      </p>
+    </div>
+  </main>
+
+  <nav class="bottom-nav" aria-label="Primary navigation">
+    <a href="index.html">
+      <span class="nav-icon">📊</span>
+      <span>Leaderboard</span>
+    </a>
+    <a href="add-match.html">
+      <span class="nav-icon">➕</span>
+      <span>Add Match</span>
+    </a>
+    <a href="matches.html">
+      <span class="nav-icon">🕑</span>
+      <span>Matches</span>
+    </a>
+    <a href="awards.html" class="active">
+      <span class="nav-icon">🏆</span>
+      <span>Awards</span>
+    </a>
+    <a href="rules.html">
+      <span class="nav-icon">📖</span>
+      <span>Rules</span>
+    </a>
+  </nav>
+</body>
+</html>
