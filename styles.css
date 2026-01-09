@@ -550,4 +550,13 @@ select option:hover {
   background-color: #1c2b45;
   color: #ffffff;
 }
+/* RULES ACCORDION */
+.rules-content { 
+  display: none; 
+}
+
+.rules-section.open .rules-content { 
+  display: block; 
+}
+
 
