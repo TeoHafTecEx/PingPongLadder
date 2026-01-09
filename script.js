@@ -1,112 +1,184 @@
 /*
- * Complex Solutions Ladder – client side logic (Google Sheets backed)
+ * Complex Solutions Ladder – client side logic (Google Sheets backend, hardened)
  *
- * This script powers all pages in the static ladder app.
- * It reads ladder + matches from the Apps Script endpoint and renders:
- *  - Leaderboard
- *  - Add Match form
- *  - Matches list
- *  - Awards
- *  - Rules page interactions
+ * ✅ GitHub Pages friendly (static site)
+ * ✅ Reads state from Apps Script (Google Sheets)
+ * ✅ Writes matches to Apps Script (server computes allowed/swap/distance + updates ladder + stats)
+ * ✅ Offline-ish: if POST fails, queues match in localStorage and lets user sync later
+ * ✅ No trust in browser for rules (server is source of truth)
  *
- * IMPORTANT:
- * - This version assumes your Apps Script is the source of truth.
- * - It now includes a DAILY movement indicator on the Leaderboard:
- *    ▲ green = moved up today
- *    ▼ red   = moved down today
- *    — grey  = no net movement today
- *
- * Movement is computed relative to a "daily baseline" snapshot stored
- * in localStorage (per device/browser) on the first load each day.
+ * Required Apps Script behavior (matches the hardened script I gave you):
+ * - GET  -> { players:[{name,rank,wins,losses,streak,lastPlayed}], matches:[...] }
+ * - POST -> { action:"submitMatch", match:{date,challenger,defender,winner,score}, pin? }
+ *           returns { ok:true, players:[...], matches:[...] } or { ok:false, error:"..." }
  */
 
-// -----------------------------
-// Config
-// -----------------------------
-(function () {
+(() => {
   "use strict";
 
-  // Your deployed Apps Script web app URL
-  // Must support GET returning { players, matches } and POST submitMatch
-  const API_URL =
+  // -----------------------------
+  // Config
+  // -----------------------------
+  const GOOGLE_SCRIPT_URL =
     "https://script.google.com/macros/s/AKfycbwa0KQCnpQOVmDKt1sk3MkAuKvMnT_TP1ViPZc_iJCsUAtp2zdS586FE6hLuhp_cgAl/exec";
 
   const STORAGE_KEYS = {
     pin: "cs_tt_league_pin",
     pending: "cs_tt_pending_matches_v1",
     lastState: "cs_tt_last_state_v1",
-    dailyBaseline: "cs_tt_daily_baseline_v1",
   };
+
+  // -----------------------------
+  // App state
+  // -----------------------------
+  let players = [];
+  let matches = [];
 
   // -----------------------------
   // Utilities
   // -----------------------------
-  const $ = (sel) => document.querySelector(sel);
-
-  function safeText(v) {
-    return String(v == null ? "" : v).trim();
+  function $(sel) {
+    return document.querySelector(sel);
   }
 
-  function sleep(ms) {
-    return new Promise((r) => setTimeout(r, ms));
+  function safeText(s) {
+    return (s ?? "").toString().trim();
   }
 
-  function formatDate(v) {
-    if (!v) return "";
-    const d = new Date(v);
-    if (isNaN(d)) return safeText(v);
-    return d.toLocaleString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
-  function fetchJson(url, opts) {
-    return fetch(url, opts).then((r) => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      return r.json();
-    });
-  }
-
-  // -----------------------------
-  // LocalStorage helpers
-  // -----------------------------
-  function loadPin() {
+  function formatDate(d) {
     try {
-      return safeText(localStorage.getItem(STORAGE_KEYS.pin));
+      const dateObj = d instanceof Date ? d : new Date(d);
+      return dateObj.toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
     } catch {
-      return "";
+      return safeText(d);
     }
   }
 
-  function savePin(pin) {
-    try {
-      localStorage.setItem(STORAGE_KEYS.pin, safeText(pin));
-    } catch {
-      // ignore
-    }
+  function clamp(n, min, max) {
+    return Math.max(min, Math.min(max, n));
   }
 
-  function loadPendingMatches() {
+  function normalizePlayer(p) {
+    return {
+      name: safeText(p?.name),
+      rank: Number(p?.rank) || 0,
+      wins: Number(p?.wins) || 0,
+      losses: Number(p?.losses) || 0,
+      streak: Number(p?.streak) || 0,
+      lastPlayed: p?.lastPlayed ?? "",
+    };
+  }
+
+  function normalizeMatch(m) {
+    return {
+      date: m?.date ?? "",
+      challenger: safeText(m?.challenger),
+      defender: safeText(m?.defender),
+      winner: safeText(m?.winner),
+      score: safeText(m?.score),
+      allowed: !!m?.allowed,
+      swap: !!m?.swap,
+      challengeDistance: Number(m?.challengeDistance) || 0,
+    };
+  }
+
+  // -----------------------------
+  // Toasts (replaces alert())
+  // -----------------------------
+  function ensureToastHost() {
+    let host = $("#toast-host");
+    if (host) return host;
+
+    host = document.createElement("div");
+    host.id = "toast-host";
+    host.style.position = "fixed";
+    host.style.right = "16px";
+    host.style.bottom = "84px"; // above bottom nav
+    host.style.display = "flex";
+    host.style.flexDirection = "column";
+    host.style.gap = "10px";
+    host.style.zIndex = "9999";
+    document.body.appendChild(host);
+    return host;
+  }
+
+  function toast(message, type = "info", timeout = 3500) {
+    const host = ensureToastHost();
+
+    const t = document.createElement("div");
+    t.className = `toast toast-${type}`;
+    t.style.padding = "12px 14px";
+    t.style.borderRadius = "12px";
+    t.style.border = "1px solid var(--color-border, rgba(255,255,255,.12))";
+    t.style.background = "rgba(0,0,0,.55)";
+    t.style.backdropFilter = "blur(10px)";
+    t.style.color = "rgba(255,255,255,.92)";
+    t.style.maxWidth = "360px";
+    t.style.boxShadow = "0 10px 30px rgba(0,0,0,.35)";
+    t.style.fontSize = "0.92rem";
+    t.style.lineHeight = "1.2";
+    t.textContent = message;
+
+    if (type === "success") t.style.borderColor = "rgba(0,255,150,.35)";
+    if (type === "error") t.style.borderColor = "rgba(255,80,80,.45)";
+    if (type === "warn") t.style.borderColor = "rgba(255,200,0,.45)";
+
+    host.appendChild(t);
+
+    const remove = () => {
+      if (!t.isConnected) return;
+      t.style.opacity = "0";
+      t.style.transform = "translateY(6px)";
+      t.style.transition = "opacity 180ms ease, transform 180ms ease";
+      setTimeout(() => t.remove(), 220);
+    };
+
+    t.addEventListener("click", remove);
+    setTimeout(remove, timeout);
+  }
+
+  // -----------------------------
+  // localStorage helpers
+  // -----------------------------
+  function getLeaguePin() {
+    return safeText(localStorage.getItem(STORAGE_KEYS.pin));
+  }
+
+  function setLeaguePin(pin) {
+    const p = safeText(pin);
+    if (!p) localStorage.removeItem(STORAGE_KEYS.pin);
+    else localStorage.setItem(STORAGE_KEYS.pin, p);
+  }
+
+  function getPendingMatches() {
     try {
       const raw = localStorage.getItem(STORAGE_KEYS.pending);
-      if (!raw) return [];
-      const arr = JSON.parse(raw);
+      const arr = JSON.parse(raw || "[]");
       return Array.isArray(arr) ? arr : [];
     } catch {
       return [];
     }
   }
 
-  function savePendingMatches(arr) {
-    try {
-      localStorage.setItem(STORAGE_KEYS.pending, JSON.stringify(arr || []));
-    } catch {
-      // ignore
-    }
+  function setPendingMatches(list) {
+    localStorage.setItem(STORAGE_KEYS.pending, JSON.stringify(list || []));
+  }
+
+  function enqueuePending(match) {
+    const list = getPendingMatches();
+    list.push(match);
+    setPendingMatches(list);
+  }
+
+  function dequeuePending() {
+    const list = getPendingMatches();
+    const next = list.shift();
+    setPendingMatches(list);
+    return next;
   }
 
   function saveLastState(state) {
@@ -130,170 +202,89 @@
   }
 
   // -----------------------------
-  // Daily movement baseline (per device)
-  // -----------------------------
-  function getTodayKey() {
-    const d = new Date();
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd}`;
-  }
-
-  function loadDailyBaseline() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEYS.dailyBaseline);
-      if (!raw) return null;
-      const data = JSON.parse(raw);
-      if (!data || typeof data !== "object") return null;
-      return data;
-    } catch {
-      return null;
-    }
-  }
-
-  function saveDailyBaseline(baseline) {
-    try {
-      localStorage.setItem(STORAGE_KEYS.dailyBaseline, JSON.stringify(baseline));
-    } catch {
-      // ignore
-    }
-  }
-
-  function ensureDailyBaseline(currentPlayers) {
-    const today = getTodayKey();
-    const existing = loadDailyBaseline();
-
-    if (!existing || existing.date !== today) {
-      const ranks = {};
-      (currentPlayers || []).forEach((p) => {
-        const name = safeText(p?.name);
-        const rank = Number(p?.rank) || 0;
-        if (name && rank) ranks[name] = rank;
-      });
-      saveDailyBaseline({ date: today, ranks });
-    }
-  }
-
-  function computeDailyMovementMap(currentPlayers) {
-    const baseline = loadDailyBaseline();
-    const ranks0 = baseline?.ranks || {};
-    const movement = new Map();
-
-    (currentPlayers || []).forEach((p) => {
-      const name = safeText(p?.name);
-      const nowRank = Number(p?.rank) || 0;
-      const baseRank = Number(ranks0[name]) || 0;
-
-      // +delta = improved (rank number decreased)
-      // base 8 -> now 6 => +2 (up 2)
-      const delta = baseRank && nowRank ? baseRank - nowRank : 0;
-      movement.set(name, delta);
-    });
-
-    return movement;
-  }
-
-  // -----------------------------
-  // State
-  // -----------------------------
-  let players = [];
-  let matches = [];
-
-  // -----------------------------
   // API
   // -----------------------------
-  async function loadState() {
-    const state = await fetchJson(API_URL, { method: "GET" });
-    if (!state || !Array.isArray(state.players) || !Array.isArray(state.matches)) {
-      throw new Error("Bad API response");
-    }
-    players = state.players;
-    matches = state.matches;
-    saveLastState(state);
-    return state;
+  async function fetchState() {
+    const res = await fetch(GOOGLE_SCRIPT_URL, { method: "GET" });
+    if (!res.ok) throw new Error(`GET failed: ${res.status}`);
+
+    const data = await res.json();
+
+    players = Array.isArray(data.players) ? data.players.map(normalizePlayer) : [];
+    matches = Array.isArray(data.matches) ? data.matches.map(normalizeMatch) : [];
+
+    players.sort((a, b) => a.rank - b.rank);
+    matches.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    saveLastState({ players, matches });
   }
 
-  async function submitMatch(match) {
-    const pin = loadPin();
+  async function postMatch(match) {
+    const pin = getLeaguePin();
     const payload = {
       action: "submitMatch",
-      pin: pin || undefined,
-      match,
+      ...(pin ? { pin } : {}),
+      match: {
+        date: match.date,
+        challenger: match.challenger,
+        defender: match.defender,
+        winner: match.winner,
+        score: match.score,
+      },
     };
 
-    const res = await fetchJson(API_URL, {
+    const res = await fetch(GOOGLE_SCRIPT_URL, {
       method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      headers: { "Content-Type": "text/plain;charset=utf-8" }, // Apps Script happiest with text/plain
       body: JSON.stringify(payload),
     });
 
-    if (!res || res.ok !== true) {
-      throw new Error(res?.error || "Submit failed");
+    if (!res.ok) throw new Error(`POST failed: ${res.status}`);
+
+    const data = await res.json();
+
+    if (data && data.ok === false) {
+      throw new Error(data.error || "Server rejected the match");
     }
 
-    // Update local state from server
-    players = res.players || players;
-    matches = res.matches || matches;
-    saveLastState({ players, matches });
-
-    return res;
+    // adopt server truth
+    if (data && (data.players || data.matches)) {
+      players = Array.isArray(data.players) ? data.players.map(normalizePlayer) : players;
+      matches = Array.isArray(data.matches) ? data.matches.map(normalizeMatch) : matches;
+      players.sort((a, b) => a.rank - b.rank);
+      matches.sort((a, b) => new Date(a.date) - new Date(b.date));
+      saveLastState({ players, matches });
+    }
   }
 
-  // -----------------------------
-  // Page routing
-  // -----------------------------
-  document.addEventListener("DOMContentLoaded", async () => {
-    const bodyId = document.body?.id || "";
+  // Sync any queued matches (offline or failed POST)
+  async function syncPendingMatches({ max = 10 } = {}) {
+    const pending = getPendingMatches();
+    if (!pending.length) return { synced: 0, remaining: 0 };
 
-    // Always try to load from server, fallback to lastState on failure
-    try {
-      await loadState();
-    } catch (e) {
-      const cached = loadLastState();
-      if (cached?.players && cached?.matches) {
-        players = cached.players;
-        matches = cached.matches;
-        showToast("Offline mode (showing last saved data).", "warn");
-      } else {
-        showToast(`Failed to load: ${e.message}`, "err");
+    let synced = 0;
+    const attempts = clamp(max, 1, 50);
+
+    for (let i = 0; i < attempts; i++) {
+      const next = getPendingMatches()[0];
+      if (!next) break;
+
+      try {
+        await postMatch(next);
+        dequeuePending();
+        synced++;
+      } catch (err) {
+        // stop on first failure to avoid hammering
+        throw err;
       }
     }
 
-    if (bodyId === "index-page") initLeaderboardPage();
-    else if (bodyId === "add-match-page") initAddMatchPage();
-    else if (bodyId === "matches-page") initMatchesPage();
-    else if (bodyId === "awards-page") initAwardsPage();
-    else if (bodyId === "rules-page") initRulesPage();
-  });
-
-  // -----------------------------
-  // UI helpers
-  // -----------------------------
-  function showToast(msg, type) {
-    const host = $("#toastHost");
-    if (!host) return;
-
-    const t = document.createElement("div");
-    t.className = `toast ${type || ""}`.trim();
-    t.textContent = msg;
-
-    host.appendChild(t);
-    setTimeout(() => t.classList.add("show"), 10);
-    setTimeout(() => {
-      t.classList.remove("show");
-      setTimeout(() => t.remove(), 250);
-    }, 3000);
+    return { synced, remaining: getPendingMatches().length };
   }
 
   // -----------------------------
-  // Leaderboard page
+  // Rendering: Leaderboard
   // -----------------------------
-  function initLeaderboardPage() {
-    renderLeaderboard();
-    renderRecentMatches();
-  }
-
   function renderLeaderboard() {
     const el = $("#leaderboard");
     if (!el) return;
@@ -307,10 +298,6 @@
       el.appendChild(empty);
       return;
     }
-
-    // ✅ Daily movement baseline + map (per device/browser)
-    ensureDailyBaseline(players);
-    const movementMap = computeDailyMovementMap(players);
 
     players.forEach((p) => {
       const card = document.createElement("div");
@@ -331,40 +318,11 @@
       badge.className = "rank-badge";
       badge.textContent = `#${p.rank}`;
 
-      // ✅ Movement indicator (compared to today's baseline on this device)
-      const delta = movementMap.get(p.name) || 0;
-      const trend = document.createElement("span");
-      trend.className = "rank-trend";
-
-      if (delta > 0) {
-        trend.textContent = `▲${delta}`;
-        trend.dataset.trend = "up";
-        trend.setAttribute("aria-label", `Up ${delta} today`);
-        trend.title = `Up ${delta} today`;
-      } else if (delta < 0) {
-        trend.textContent = `▼${Math.abs(delta)}`;
-        trend.dataset.trend = "down";
-        trend.setAttribute("aria-label", `Down ${Math.abs(delta)} today`);
-        trend.title = `Down ${Math.abs(delta)} today`;
-      } else {
-        trend.textContent = "—";
-        trend.dataset.trend = "flat";
-        trend.setAttribute("aria-label", "No movement today");
-        trend.title = "No movement today";
-      }
-
-      const rankWrap = document.createElement("div");
-      rankWrap.style.display = "inline-flex";
-      rankWrap.style.alignItems = "center";
-      rankWrap.style.gap = "8px";
-      rankWrap.appendChild(badge);
-      rankWrap.appendChild(trend);
-
       const name = document.createElement("div");
       name.className = "player-name";
       name.textContent = p.name;
 
-      left.appendChild(rankWrap);
+      left.appendChild(badge);
       left.appendChild(name);
 
       const right = document.createElement("div");
@@ -391,6 +349,7 @@
       bottom.style.opacity = "0.8";
       bottom.textContent = p.lastPlayed ? `Last played: ${formatDate(p.lastPlayed)}` : "Last played: —";
 
+      // Small highlight for top 3
       if (p.rank <= 3) {
         card.style.borderColor = "rgba(228,26,103,.25)";
       }
@@ -403,397 +362,11 @@
     injectMinimalCardStylesOnce();
   }
 
-  function renderRecentMatches() {
-    const el = $("#recentMatches");
-    if (!el) return;
-
-    el.innerHTML = "";
-
-    const recent = [...matches]
-      .sort((a, b) => new Date(b.date) - new Date(a.date))
-      .slice(0, 5);
-
-    if (!recent.length) {
-      const empty = document.createElement("div");
-      empty.className = "card";
-      empty.textContent = "No matches yet.";
-      el.appendChild(empty);
-      return;
-    }
-
-    recent.forEach((m) => {
-      const card = document.createElement("div");
-      card.className = "card";
-
-      const line1 = document.createElement("div");
-      line1.style.display = "flex";
-      line1.style.justifyContent = "space-between";
-      line1.style.gap = "10px";
-
-      const left = document.createElement("div");
-      left.innerHTML = `<strong>${safeText(m.winner)}</strong> beat ${safeText(
-        m.winner === m.challenger ? m.defender : m.challenger
-      )}`;
-
-      const right = document.createElement("div");
-      right.style.opacity = "0.8";
-      right.style.whiteSpace = "nowrap";
-      right.textContent = safeText(m.score || "");
-
-      line1.appendChild(left);
-      line1.appendChild(right);
-
-      const line2 = document.createElement("div");
-      line2.style.marginTop = "6px";
-      line2.style.opacity = "0.75";
-      line2.style.fontSize = "0.85rem";
-      line2.textContent = formatDate(m.date);
-
-      card.appendChild(line1);
-      card.appendChild(line2);
-      el.appendChild(card);
-    });
-  }
-
-  // -----------------------------
-  // Add Match page
-  // -----------------------------
-  function initAddMatchPage() {
-    const challengerSel = $("#challenger");
-    const defenderSel = $("#defender");
-    const winnerSel = $("#winner");
-    const scoreSel = $("#score");
-    const pinInput = $("#pin");
-    const form = $("#matchForm");
-    const btn = $("#submitBtn");
-    const statusEl = $("#submitStatus");
-
-    if (!form) return;
-
-    // populate selects
-    const names = players.map((p) => p.name);
-    fillSelect(challengerSel, names);
-    fillSelect(defenderSel, names);
-    fillSelect(winnerSel, names);
-
-    // pin
-    if (pinInput) {
-      pinInput.value = loadPin();
-      pinInput.addEventListener("input", () => savePin(pinInput.value));
-    }
-
-    // score options
-    if (scoreSel && !scoreSel.options.length) {
-      ["2-0", "2-1", "0-2", "1-2"].forEach((s) => {
-        const opt = document.createElement("option");
-        opt.value = s;
-        opt.textContent = s;
-        scoreSel.appendChild(opt);
-      });
-    }
-
-    // prevent picking same person
-    function syncWinnerOptions() {
-      if (!challengerSel || !defenderSel || !winnerSel) return;
-      const c = challengerSel.value;
-      const d = defenderSel.value;
-
-      [...winnerSel.options].forEach((o) => {
-        o.disabled = o.value !== c && o.value !== d;
-      });
-
-      if (winnerSel.value !== c && winnerSel.value !== d) winnerSel.value = c || d || "";
-    }
-
-    challengerSel?.addEventListener("change", syncWinnerOptions);
-    defenderSel?.addEventListener("change", syncWinnerOptions);
-    syncWinnerOptions();
-
-    form.addEventListener("submit", async (ev) => {
-      ev.preventDefault();
-
-      const challenger = safeText(challengerSel?.value);
-      const defender = safeText(defenderSel?.value);
-      const winner = safeText(winnerSel?.value);
-      const score = safeText(scoreSel?.value);
-
-      if (!challenger || !defender || !winner || !score) {
-        showToast("Please complete all fields.", "warn");
-        return;
-      }
-      if (challenger === defender) {
-        showToast("Challenger and defender cannot be the same.", "warn");
-        return;
-      }
-
-      const match = {
-        date: new Date().toISOString(),
-        challenger,
-        defender,
-        winner,
-        score,
-      };
-
-      // optimistic pending queue (offline safe)
-      const pending = loadPendingMatches();
-      pending.push(match);
-      savePendingMatches(pending);
-
-      if (btn) btn.disabled = true;
-      if (statusEl) statusEl.textContent = "Submitting…";
-
-      try {
-        // try submit
-        await submitMatch(match);
-
-        // remove from pending
-        const pending2 = loadPendingMatches().filter((x) => JSON.stringify(x) !== JSON.stringify(match));
-        savePendingMatches(pending2);
-
-        showToast("Match submitted ✅", "ok");
-        if (statusEl) statusEl.textContent = "Submitted ✅";
-
-        // refresh selects + state on page
-        await sleep(350);
-        renderLeaderboardPreviewIfPresent();
-      } catch (e) {
-        showToast(`Saved locally (offline). Will retry later. (${e.message})`, "warn");
-        if (statusEl) statusEl.textContent = "Saved locally (offline).";
-      } finally {
-        if (btn) btn.disabled = false;
-      }
-    });
-
-    // attempt resend pending on load
-    retryPendingSubmissions();
-  }
-
-  function fillSelect(sel, items) {
-    if (!sel) return;
-    sel.innerHTML = "";
-    const placeholder = document.createElement("option");
-    placeholder.value = "";
-    placeholder.textContent = "Select…";
-    placeholder.disabled = true;
-    placeholder.selected = true;
-    sel.appendChild(placeholder);
-
-    (items || []).forEach((x) => {
-      const opt = document.createElement("option");
-      opt.value = x;
-      opt.textContent = x;
-      sel.appendChild(opt);
-    });
-  }
-
-  async function retryPendingSubmissions() {
-    const pending = loadPendingMatches();
-    if (!pending.length) return;
-
-    // try submit in order
-    for (const m of [...pending]) {
-      try {
-        await submitMatch(m);
-        const rest = loadPendingMatches().filter((x) => JSON.stringify(x) !== JSON.stringify(m));
-        savePendingMatches(rest);
-      } catch {
-        // stop on first failure (likely still offline)
-        break;
-      }
-    }
-  }
-
-  function renderLeaderboardPreviewIfPresent() {
-    // If add-match page also includes leaderboard (some versions do)
-    if ($("#leaderboard")) renderLeaderboard();
-  }
-
-  // -----------------------------
-  // Matches page
-  // -----------------------------
-  function initMatchesPage() {
-    const el = $("#matchesList");
-    if (!el) return;
-
-    el.innerHTML = "";
-
-    const list = [...matches].sort((a, b) => new Date(b.date) - new Date(a.date));
-
-    if (!list.length) {
-      const empty = document.createElement("div");
-      empty.className = "card";
-      empty.textContent = "No matches yet.";
-      el.appendChild(empty);
-      return;
-    }
-
-    list.forEach((m) => {
-      const card = document.createElement("div");
-      card.className = "card";
-
-      const header = document.createElement("div");
-      header.style.display = "flex";
-      header.style.justifyContent = "space-between";
-      header.style.alignItems = "center";
-      header.style.gap = "10px";
-
-      const title = document.createElement("div");
-      title.innerHTML = `<strong>${safeText(m.winner)}</strong> won`;
-
-      const score = document.createElement("div");
-      score.style.opacity = "0.85";
-      score.style.whiteSpace = "nowrap";
-      score.textContent = safeText(m.score || "");
-
-      header.appendChild(title);
-      header.appendChild(score);
-
-      const detail = document.createElement("div");
-      detail.style.marginTop = "8px";
-      detail.style.opacity = "0.8";
-      detail.style.fontSize = "0.9rem";
-      detail.innerHTML = `
-        <div>${safeText(m.challenger)} (challenger) vs ${safeText(m.defender)} (defender)</div>
-        <div style="margin-top:6px; font-size:.85rem; opacity:.85;">${formatDate(m.date)}</div>
-      `;
-
-      card.appendChild(header);
-      card.appendChild(detail);
-      el.appendChild(card);
-    });
-  }
-
-  // -----------------------------
-  // Awards page
-  // -----------------------------
-  function initAwardsPage() {
-    renderAwards();
-  }
-
-  function renderAwards() {
-    const el = $("#awardsGrid");
-    if (!el) return;
-
-    el.innerHTML = "";
-
-    if (!players.length) return;
-
-    // Compute basic awards from match list + player stats
-    const byName = new Map(players.map((p) => [p.name, p]));
-
-    // Champion = rank 1
-    const champ = players.find((p) => Number(p.rank) === 1);
-
-    // Most successful challenger = most wins where winner === challenger
-    const challengerWins = new Map();
-    matches.forEach((m) => {
-      if (m.winner && m.challenger && safeText(m.winner) === safeText(m.challenger)) {
-        const k = safeText(m.challenger);
-        challengerWins.set(k, (challengerWins.get(k) || 0) + 1);
-      }
-    });
-
-    // Giant killer = wins vs higher ranked opponent (approx by challengeDistance >= 1)
-    const giantKills = new Map();
-    matches.forEach((m) => {
-      const cd = Number(m.challengeDistance) || 0;
-      if (cd >= 1 && safeText(m.winner) === safeText(m.challenger)) {
-        const k = safeText(m.challenger);
-        giantKills.set(k, (giantKills.get(k) || 0) + 1);
-      }
-    });
-
-    const topChallenger = maxByMap_(challengerWins);
-    const topGiant = maxByMap_(giantKills);
-
-    const cards = [
-      {
-        title: "Ladder Champion",
-        value: champ ? champ.name : "—",
-        sub: champ ? "Rank #1" : "",
-        icon: "🏆",
-      },
-      {
-        title: "Most Successful Challenger",
-        value: topChallenger?.key || "—",
-        sub: topChallenger ? `${topChallenger.val} challenge wins` : "",
-        icon: "⚔️",
-      },
-      {
-        title: "Giant Killer",
-        value: topGiant?.key || "—",
-        sub: topGiant ? `${topGiant.val} wins vs higher ranks` : "",
-        icon: "🗡️",
-      },
-    ];
-
-    cards.forEach((c) => {
-      const card = document.createElement("div");
-      card.className = "card";
-
-      const h = document.createElement("div");
-      h.style.display = "flex";
-      h.style.justifyContent = "space-between";
-      h.style.alignItems = "center";
-
-      const t = document.createElement("div");
-      t.style.fontWeight = "800";
-      t.textContent = c.title;
-
-      const ic = document.createElement("div");
-      ic.style.fontSize = "1.3rem";
-      ic.textContent = c.icon;
-
-      h.appendChild(t);
-      h.appendChild(ic);
-
-      const v = document.createElement("div");
-      v.style.marginTop = "10px";
-      v.style.fontSize = "1.2rem";
-      v.style.fontWeight = "800";
-      v.textContent = c.value;
-
-      const s = document.createElement("div");
-      s.style.marginTop = "6px";
-      s.style.opacity = "0.8";
-      s.style.fontSize = "0.9rem";
-      s.textContent = c.sub;
-
-      card.appendChild(h);
-      card.appendChild(v);
-      card.appendChild(s);
-      el.appendChild(card);
-    });
-  }
-
-  function maxByMap_(m) {
-    let bestK = null;
-    let bestV = -Infinity;
-    for (const [k, v] of m.entries()) {
-      if (v > bestV) {
-        bestV = v;
-        bestK = k;
-      }
-    }
-    return bestK == null ? null : { key: bestK, val: bestV };
-  }
-
-  // -----------------------------
-  // Rules page (toggle + search)
-  // -----------------------------
-  function initRulesPage() {
-    // Page already has inline logic in rules.html in some builds.
-    // This is a safe no-op placeholder.
-  }
-
-  // -----------------------------
-  // Minimal styles injected for leaderboard cards
-  // -----------------------------
   function injectMinimalCardStylesOnce() {
-    if ($("#__cs_tt_styles__")) return;
+    if ($("#__cs_tt_styles")) return;
 
     const s = document.createElement("style");
-    s.id = "__cs_tt_styles__";
+    s.id = "__cs_tt_styles";
     s.textContent = `
       .leaderboard-card { padding: 14px 14px; }
       .rank-badge{
@@ -805,33 +378,6 @@
         border: 1px solid rgba(255,255,255,.10);
         font-weight: 700;
         letter-spacing: -0.01em;
-      }
-      .rank-trend{
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 42px;
-        padding: 6px 10px;
-        border-radius: 999px;
-        font-weight: 800;
-        font-size: 0.85rem;
-        letter-spacing: -0.01em;
-        border: 1px solid rgba(255,255,255,.10);
-        background: rgba(255,255,255,.06);
-        opacity: 0.95;
-      }
-      .rank-trend[data-trend="up"]{
-        color: rgba(80, 255, 170, 0.95);
-        border-color: rgba(80, 255, 170, 0.25);
-        background: rgba(80, 255, 170, 0.08);
-      }
-      .rank-trend[data-trend="down"]{
-        color: rgba(255, 90, 90, 0.95);
-        border-color: rgba(255, 90, 90, 0.25);
-        background: rgba(255, 90, 90, 0.07);
-      }
-      .rank-trend[data-trend="flat"]{
-        color: rgba(200, 200, 200, 0.85);
       }
       .player-name{
         font-size: 1.05rem;
@@ -846,4 +392,516 @@
     `;
     document.head.appendChild(s);
   }
+
+  // -----------------------------
+  // Rendering: Matches page
+  // -----------------------------
+  function renderMatches() {
+    const container = $("#matchesList");
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    if (!matches.length) {
+      const empty = document.createElement("div");
+      empty.className = "card";
+      empty.textContent = "No matches logged yet.";
+      container.appendChild(empty);
+      return;
+    }
+
+    const sorted = [...matches].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    sorted.forEach((m) => {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const title = document.createElement("div");
+      title.style.fontWeight = "800";
+      title.style.letterSpacing = "-0.01em";
+      title.style.marginBottom = "6px";
+      title.textContent = `${m.challenger} vs ${m.defender}`;
+
+      const detail = document.createElement("div");
+      detail.style.fontSize = "0.92rem";
+      detail.style.opacity = "0.85";
+      detail.textContent = `${formatDate(m.date)} • ${m.winner} wins ${m.score || ""}`.trim();
+
+      const tags = document.createElement("div");
+      tags.style.marginTop = "10px";
+      tags.style.fontSize = "0.78rem";
+      tags.style.opacity = "0.8";
+
+      const parts = [];
+      if (!m.allowed) parts.push("Invalid challenge");
+      if (m.allowed && m.winner === m.challenger) parts.push(m.challengeDistance >= 2 ? "Giant killer" : "Challenge win");
+      if (m.allowed && m.winner === m.defender) parts.push("Defended");
+      if (m.swap) parts.push("Swap");
+      tags.textContent = parts.join(" • ");
+
+      card.appendChild(title);
+      card.appendChild(detail);
+      if (tags.textContent) card.appendChild(tags);
+
+      container.appendChild(card);
+    });
+  }
+
+  // -----------------------------
+  // Awards (simple + useful)
+  // -----------------------------
+  function computeAwards(playersList, matchList) {
+    const awards = [];
+
+    // Most wins
+    let topWins = null;
+    for (const p of playersList) {
+      if (!topWins || p.wins > topWins.wins) topWins = p;
+    }
+    if (topWins) awards.push({ title: "Most Wins", value: `${topWins.name} (${topWins.wins})` });
+
+    // Best streak
+    let bestStreak = null;
+    for (const p of playersList) {
+      if (!bestStreak || (p.streak || 0) > (bestStreak.streak || 0)) bestStreak = p;
+    }
+    if (bestStreak) awards.push({ title: "Best Streak", value: `${bestStreak.name} (${bestStreak.streak || 0})` });
+
+    // Giant killers (challengeDistance >=2 and challenger wins)
+    const giantKillers = matchList.filter((m) => m.allowed && m.winner === m.challenger && (m.challengeDistance || 0) >= 2);
+    if (giantKillers.length) {
+      awards.push({ title: "Giant Killers", value: `${giantKillers.length} total` });
+    }
+
+    // Most active (played count)
+    const counts = {};
+    matchList.forEach((m) => {
+      counts[m.challenger] = (counts[m.challenger] || 0) + 1;
+      counts[m.defender] = (counts[m.defender] || 0) + 1;
+    });
+    let mostActive = null;
+    Object.entries(counts).forEach(([name, c]) => {
+      if (!mostActive || c > mostActive.count) mostActive = { name, count: c };
+    });
+    if (mostActive) awards.push({ title: "Most Active", value: `${mostActive.name} (${mostActive.count} matches)` });
+
+    return awards;
+  }
+
+  function renderAwards() {
+    const container = $("#awardsContainer");
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    const awards = computeAwards(players, matches);
+
+    if (!awards.length) {
+      const empty = document.createElement("div");
+      empty.className = "card";
+      empty.textContent = "No awards yet — log some matches.";
+      container.appendChild(empty);
+      return;
+    }
+
+    awards.forEach((a) => {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const t = document.createElement("div");
+      t.style.fontWeight = "800";
+      t.style.marginBottom = "8px";
+      t.textContent = a.title;
+
+      const v = document.createElement("div");
+      v.style.fontSize = "0.98rem";
+      v.style.opacity = "0.9";
+      v.textContent = a.value;
+
+      card.appendChild(t);
+      card.appendChild(v);
+      container.appendChild(card);
+    });
+  }
+
+  // -----------------------------
+  // Add Match page logic
+  // -----------------------------
+  function populateSelects() {
+    const challengerSelect = $("#challengerSelect");
+    const defenderSelect = $("#defenderSelect");
+    if (!challengerSelect || !defenderSelect) return;
+
+    challengerSelect.innerHTML = "";
+    defenderSelect.innerHTML = "";
+
+    players.forEach((p) => {
+      const o1 = document.createElement("option");
+      o1.value = p.name;
+      o1.textContent = p.name;
+      challengerSelect.appendChild(o1);
+
+      const o2 = document.createElement("option");
+      o2.value = p.name;
+      o2.textContent = p.name;
+      defenderSelect.appendChild(o2);
+    });
+
+    // Set defaults: challenger = rank 2, defender = rank 1 (if possible)
+    if (players.length >= 2) {
+      challengerSelect.value = players[1].name;
+      defenderSelect.value = players[0].name;
+    }
+
+    // prevent same value
+    if (challengerSelect.value === defenderSelect.value && players.length >= 2) {
+      defenderSelect.value = players[0].name === challengerSelect.value ? players[1].name : players[0].name;
+    }
+  }
+
+  function ensureSyncAndPinUI() {
+    // Add a small utility bar on Add Match page and Matches page
+    const pageId = document.body?.id || "";
+
+    const container = document.querySelector("main.container");
+    if (!container) return;
+
+    // Avoid duplicating
+    if ($("#utilityBar")) return;
+
+    const bar = document.createElement("div");
+    bar.id = "utilityBar";
+    bar.className = "card";
+    bar.style.padding = "12px 14px";
+    bar.style.display = "flex";
+    bar.style.flexWrap = "wrap";
+    bar.style.gap = "10px";
+    bar.style.alignItems = "center";
+    bar.style.justifyContent = "space-between";
+
+    const left = document.createElement("div");
+    left.style.display = "flex";
+    left.style.flexWrap = "wrap";
+    left.style.gap = "10px";
+    left.style.alignItems = "center";
+
+    const pinLabel = document.createElement("span");
+    pinLabel.style.fontSize = "0.85rem";
+    pinLabel.style.opacity = "0.8";
+    pinLabel.textContent = "League code:";
+
+    const pinInput = document.createElement("input");
+    pinInput.type = "password";
+    pinInput.placeholder = "optional";
+    pinInput.value = getLeaguePin();
+    pinInput.style.padding = "10px 12px";
+    pinInput.style.borderRadius = "10px";
+    pinInput.style.border = "1px solid rgba(255,255,255,.14)";
+    pinInput.style.background = "rgba(255,255,255,.06)";
+    pinInput.style.color = "rgba(255,255,255,.92)";
+    pinInput.style.outline = "none";
+    pinInput.style.width = "160px";
+
+    pinInput.addEventListener("change", () => {
+      setLeaguePin(pinInput.value);
+      toast("League code saved on this device.", "success");
+    });
+
+    left.appendChild(pinLabel);
+    left.appendChild(pinInput);
+
+    const right = document.createElement("div");
+    right.style.display = "flex";
+    right.style.flexWrap = "wrap";
+    right.style.gap = "10px";
+    right.style.alignItems = "center";
+
+    const pendingCount = document.createElement("span");
+    pendingCount.id = "pendingCount";
+    pendingCount.style.fontSize = "0.85rem";
+    pendingCount.style.opacity = "0.85";
+
+    function refreshPendingLabel() {
+      const n = getPendingMatches().length;
+      pendingCount.textContent = n ? `Pending saves: ${n}` : "Pending saves: 0";
+    }
+
+    const syncBtn = document.createElement("button");
+    syncBtn.className = "button";
+    syncBtn.textContent = "Sync pending";
+    syncBtn.style.padding = "10px 12px";
+
+    syncBtn.addEventListener("click", async () => {
+      try {
+        syncBtn.disabled = true;
+        syncBtn.textContent = "Syncing…";
+        const res = await syncPendingMatches({ max: 25 });
+        refreshPendingLabel();
+        toast(`Synced ${res.synced}. Remaining ${res.remaining}.`, "success");
+        // re-render current page if needed
+        if (pageId === "leaderboard-page") renderLeaderboard();
+        if (pageId === "matches-page") renderMatches();
+        if (pageId === "awards-page") renderAwards();
+      } catch (err) {
+        toast(`Sync failed: ${err.message || err}`, "error");
+      } finally {
+        syncBtn.disabled = false;
+        syncBtn.textContent = "Sync pending";
+      }
+    });
+
+    refreshPendingLabel();
+    right.appendChild(pendingCount);
+    right.appendChild(syncBtn);
+
+    bar.appendChild(left);
+    bar.appendChild(right);
+
+    // Insert utility bar at top of main content
+    container.insertBefore(bar, container.firstChild);
+
+    // Keep label up to date
+    setInterval(refreshPendingLabel, 2000);
+  }
+
+  function renderAddMatch() {
+    const challengerSelect = $("#challengerSelect");
+    const defenderSelect = $("#defenderSelect");
+    if (!challengerSelect || !defenderSelect) return;
+
+    ensureSyncAndPinUI();
+    populateSelects();
+
+    const challengerNameEl = $("#challengerName");
+    const defenderNameEl = $("#defenderName");
+    const challengerScoreEl = $("#challengerScore");
+    const defenderScoreEl = $("#defenderScore");
+    const challengerWinnerLabel = $("#challengerWinner");
+    const defenderWinnerLabel = $("#defenderWinner");
+    const summaryEl = $("#summary");
+    const confirmBtn = $("#confirmButton");
+
+    const challengerPlus = $("#challengerPlus");
+    const challengerMinus = $("#challengerMinus");
+    const defenderPlus = $("#defenderPlus");
+    const defenderMinus = $("#defenderMinus");
+
+    if (
+      !challengerNameEl ||
+      !defenderNameEl ||
+      !challengerScoreEl ||
+      !defenderScoreEl ||
+      !challengerWinnerLabel ||
+      !defenderWinnerLabel ||
+      !summaryEl ||
+      !confirmBtn ||
+      !challengerPlus ||
+      !challengerMinus ||
+      !defenderPlus ||
+      !defenderMinus
+    ) {
+      return;
+    }
+
+    let challenger = safeText(challengerSelect.value);
+    let defender = safeText(defenderSelect.value);
+    let challengerScore = 0;
+    let defenderScore = 0;
+    let matchFinished = false;
+
+    function resetScores() {
+      challengerScore = 0;
+      defenderScore = 0;
+      matchFinished = false;
+      challengerScoreEl.textContent = "0";
+      defenderScoreEl.textContent = "0";
+      challengerWinnerLabel.classList.add("hide");
+      defenderWinnerLabel.classList.add("hide");
+      summaryEl.classList.add("hide");
+      confirmBtn.classList.add("hide");
+    }
+
+    function updateNames() {
+      challenger = safeText(challengerSelect.value);
+      defender = safeText(defenderSelect.value);
+
+      if (challenger === defender) {
+        // auto-correct
+        const alt = players.find((p) => p.name !== challenger);
+        if (alt) defenderSelect.value = alt.name;
+        defender = safeText(defenderSelect.value);
+      }
+
+      challengerNameEl.textContent = challenger;
+      defenderNameEl.textContent = defender;
+      resetScores();
+    }
+
+    function updateWinnerDisplay() {
+      challengerWinnerLabel.classList.add("hide");
+      defenderWinnerLabel.classList.add("hide");
+      matchFinished = false;
+
+      if (challengerScore >= 2 || defenderScore >= 2) {
+        matchFinished = true;
+        if (challengerScore >= 2) challengerWinnerLabel.classList.remove("hide");
+        if (defenderScore >= 2) defenderWinnerLabel.classList.remove("hide");
+
+        const winner = challengerScore >= 2 ? challenger : defender;
+        const scoreStr = `${challengerScore}-${defenderScore}`;
+
+        summaryEl.innerHTML = `
+          <strong>${winner}</strong> wins ${scoreStr}.
+          <div style="margin-top:6px; opacity:.85; font-size:.9rem;">
+            We’ll validate the challenge rules and update the ladder.
+          </div>
+        `;
+        summaryEl.classList.remove("hide");
+        confirmBtn.classList.remove("hide");
+      } else {
+        summaryEl.classList.add("hide");
+        confirmBtn.classList.add("hide");
+      }
+    }
+
+    challengerPlus.addEventListener("click", () => {
+      if (matchFinished) return;
+      if (challengerScore >= 2) return;
+      challengerScore++;
+      challengerScoreEl.textContent = String(challengerScore);
+      updateWinnerDisplay();
+    });
+
+    challengerMinus.addEventListener("click", () => {
+      if (matchFinished) return;
+      challengerScore = Math.max(0, challengerScore - 1);
+      challengerScoreEl.textContent = String(challengerScore);
+      updateWinnerDisplay();
+    });
+
+    defenderPlus.addEventListener("click", () => {
+      if (matchFinished) return;
+      if (defenderScore >= 2) return;
+      defenderScore++;
+      defenderScoreEl.textContent = String(defenderScore);
+      updateWinnerDisplay();
+    });
+
+    defenderMinus.addEventListener("click", () => {
+      if (matchFinished) return;
+      defenderScore = Math.max(0, defenderScore - 1);
+      defenderScoreEl.textContent = String(defenderScore);
+      updateWinnerDisplay();
+    });
+
+    challengerSelect.addEventListener("change", updateNames);
+    defenderSelect.addEventListener("change", updateNames);
+
+    updateNames();
+
+    confirmBtn.addEventListener("click", async () => {
+      if (!matchFinished) return;
+
+      const winner = challengerScore >= 2 ? challenger : defender;
+      const scoreStr = `${challengerScore}-${defenderScore}`;
+
+      const match = {
+        date: new Date().toISOString(), // server formats/records as it likes
+        challenger,
+        defender,
+        winner,
+        score: scoreStr,
+      };
+
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = "Saving…";
+
+      try {
+        await postMatch(match);
+        toast("Match saved and ladder updated.", "success");
+        resetScores();
+        updateNames(); // refresh names + reset
+
+      } catch (err) {
+        // Queue locally so it never feels broken
+        enqueuePending(match);
+        toast(`Couldn’t save right now. Stored locally (pending sync).`, "warn");
+        resetScores();
+      } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = "Confirm Match";
+      }
+    });
+  }
+
+  // -----------------------------
+  // Rules page search (light touch)
+  // -----------------------------
+  function initRulesSearch() {
+    const input = $("#ruleSearch");
+    if (!input) return;
+
+    input.addEventListener("input", () => {
+      const q = safeText(input.value).toLowerCase();
+      const rules = document.querySelectorAll(".rule-card, .card");
+      rules.forEach((r) => {
+        const txt = safeText(r.textContent).toLowerCase();
+        r.style.display = !q || txt.includes(q) ? "" : "none";
+      });
+    });
+  }
+
+  // -----------------------------
+  // Boot
+  // -----------------------------
+  async function boot() {
+    const page = document.body?.id || "";
+
+    // Use cached state immediately (fast paint), then refresh from server
+    const cached = loadLastState();
+    if (cached?.players && cached?.matches) {
+      players = cached.players.map(normalizePlayer);
+      matches = cached.matches.map(normalizeMatch);
+      players.sort((a, b) => a.rank - b.rank);
+      matches.sort((a, b) => new Date(a.date) - new Date(b.date));
+    }
+
+    // Render initial (cached) if possible
+    if (page === "leaderboard-page") renderLeaderboard();
+    if (page === "matches-page") {
+      ensureSyncAndPinUI();
+      renderMatches();
+    }
+    if (page === "awards-page") renderAwards();
+    if (page === "add-match-page") renderAddMatch();
+    if (page === "rules-page") initRulesSearch();
+
+    // Now fetch live state
+    try {
+      await fetchState();
+
+      // Auto-sync any pending matches when online
+      const pending = getPendingMatches().length;
+      if (pending) {
+        try {
+          const res = await syncPendingMatches({ max: 10 });
+          if (res.synced) toast(`Auto-synced ${res.synced} pending match(es).`, "success");
+        } catch {
+          // ignore (manual sync available)
+        }
+      }
+
+      // Re-render with fresh data
+      if (page === "leaderboard-page") renderLeaderboard();
+      if (page === "matches-page") renderMatches();
+      if (page === "awards-page") renderAwards();
+      if (page === "add-match-page") renderAddMatch();
+
+    } catch (err) {
+      toast(`Live update failed. Using cached data.`, "warn");
+      // keep cached UI
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", boot);
 })();
