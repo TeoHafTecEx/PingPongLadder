@@ -1033,4 +1033,18 @@
   }
 
   document.addEventListener("DOMContentLoaded", boot);
+  document.addEventListener("DOMContentLoaded", () => {
+  const rulesPage = document.getElementById("rules-page");
+  if (!rulesPage) return;
+
+  document.querySelectorAll(".rules-section .rules-header").forEach(header => {
+    header.style.cursor = "pointer";
+
+    header.addEventListener("click", () => {
+      const section = header.closest(".rules-section");
+      section.classList.toggle("open");
+    });
+  });
+});
+
 })();
