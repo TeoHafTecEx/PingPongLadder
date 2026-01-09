@@ -559,4 +559,9 @@ select option:hover {
   display: block; 
 }
 
+body::before {
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+}
 
