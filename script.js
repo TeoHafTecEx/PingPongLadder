@@ -34,6 +34,10 @@
   let players = [];
   let matches = [];
 
+  // Rank movement indicators (vs previous known state)
+  // Map<playerName, delta> where delta = oldRank - newRank (positive = moved up)
+  let rankMovement = new Map();
+
   // -----------------------------
   // Utilities
   // -----------------------------
@@ -84,6 +88,31 @@
       swap: !!m?.swap,
       challengeDistance: Number(m?.challengeDistance) || 0,
     };
+  }
+
+  function computeRankMovement(prevPlayers, nextPlayers) {
+    const prev = new Map();
+    (prevPlayers || []).forEach((p) => {
+      const name = safeText(p?.name);
+      const rank = Number(p?.rank) || 0;
+      if (name) prev.set(name, rank);
+    });
+
+    const next = new Map();
+    (nextPlayers || []).forEach((p) => {
+      const name = safeText(p?.name);
+      const rank = Number(p?.rank) || 0;
+      if (name) next.set(name, rank);
+    });
+
+    const out = new Map();
+    next.forEach((newRank, name) => {
+      const oldRank = prev.get(name);
+      if (!oldRank || !newRank) return;
+      out.set(name, oldRank - newRank); // + => moved up, - => moved down
+    });
+
+    return out;
   }
 
   // -----------------------------
@@ -205,6 +234,8 @@
   // API
   // -----------------------------
   async function fetchState() {
+    const prevPlayers = Array.isArray(players) ? players.map((p) => ({ ...p })) : [];
+
     const res = await fetch(GOOGLE_SCRIPT_URL, { method: "GET" });
     if (!res.ok) throw new Error(`GET failed: ${res.status}`);
 
@@ -216,10 +247,15 @@
     players.sort((a, b) => a.rank - b.rank);
     matches.sort((a, b) => new Date(a.date) - new Date(b.date));
 
+    // Movement vs previous state
+    rankMovement = computeRankMovement(prevPlayers, players);
+
     saveLastState({ players, matches });
   }
 
   async function postMatch(match) {
+    const prevPlayers = Array.isArray(players) ? players.map((p) => ({ ...p })) : [];
+
     const pin = getLeaguePin();
     const payload = {
       action: "submitMatch",
@@ -253,6 +289,10 @@
       matches = Array.isArray(data.matches) ? data.matches.map(normalizeMatch) : matches;
       players.sort((a, b) => a.rank - b.rank);
       matches.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      // Movement vs previous state
+      rankMovement = computeRankMovement(prevPlayers, players);
+
       saveLastState({ players, matches });
     }
   }
@@ -318,11 +358,19 @@
       badge.className = "rank-badge";
       badge.textContent = `#${p.rank}`;
 
+      // Movement indicator (vs previous state)
+      const delta = Number(rankMovement.get(p.name) || 0);
+      const move = document.createElement("div");
+      move.className = `move-indicator ${delta > 0 ? "move-up" : delta < 0 ? "move-down" : "move-flat"}`;
+      move.textContent = delta > 0 ? "▲" : delta < 0 ? "▼" : "—";
+      move.title = delta > 0 ? `Moved up ${delta}` : delta < 0 ? `Moved down ${Math.abs(delta)}` : "No movement";
+
       const name = document.createElement("div");
       name.className = "player-name";
       name.textContent = p.name;
 
       left.appendChild(badge);
+      left.appendChild(move);
       left.appendChild(name);
 
       const right = document.createElement("div");
@@ -389,6 +437,24 @@
         font-size: 0.95rem;
         font-weight: 600;
       }
+
+      .move-indicator{
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,.12);
+        background: rgba(255,255,255,.06);
+        font-weight: 900;
+        font-size: 0.95rem;
+        line-height: 1;
+        user-select: none;
+      }
+      .move-up{ color: rgba(0,255,160,.95); border-color: rgba(0,255,160,.25); background: rgba(0,255,160,.10); }
+      .move-down{ color: rgba(255,90,90,.95); border-color: rgba(255,90,90,.25); background: rgba(255,90,90,.10); }
+      .move-flat{ color: rgba(255,255,255,.55); border-color: rgba(255,255,255,.14); background: rgba(255,255,255,.06); }
     `;
     document.head.appendChild(s);
   }
@@ -527,6 +593,75 @@
   // -----------------------------
   // Add Match page logic
   // -----------------------------
+  function getPlayerByName(name) {
+    const n = safeText(name);
+    return players.find((p) => p.name === n) || null;
+  }
+
+  function getLastOpponent(playerName) {
+    const n = safeText(playerName);
+    if (!n || !matches.length) return null;
+
+    const sorted = [...matches].sort((a, b) => new Date(b.date) - new Date(a.date));
+    for (const m of sorted) {
+      if (m.challenger === n) return m.defender;
+      if (m.defender === n) return m.challenger;
+    }
+    return null;
+  }
+
+  // Rules implemented client-side (server still validates):
+  // - Challenge up: up to 2 ranks above (rank-1, rank-2)
+  // - Push-down challenge: 1 rank below (rank+1)
+  // - No back-to-back repeats: exclude your last opponent
+  function getAllowedDefendersForChallenger(challengerName) {
+    const p = getPlayerByName(challengerName);
+    if (!p || !p.rank) return players.map((x) => x.name).filter((n) => n && n !== challengerName);
+
+    const maxRank = players.length;
+    const r = p.rank;
+
+    const allowedRanks = new Set([
+      r - 1,
+      r - 2,
+      r + 1,
+    ].filter((x) => x >= 1 && x <= maxRank && x !== r));
+
+    const allowed = players
+      .filter((x) => allowedRanks.has(x.rank))
+      .sort((a, b) => a.rank - b.rank)
+      .map((x) => x.name);
+
+    const lastOpp = getLastOpponent(challengerName);
+    const filtered = lastOpp ? allowed.filter((n) => n !== lastOpp) : allowed;
+
+    return filtered;
+  }
+
+  function rebuildDefenderOptions({ challengerSelect, defenderSelect }) {
+    const challenger = safeText(challengerSelect?.value);
+    const currentDefender = safeText(defenderSelect?.value);
+
+    const allowed = getAllowedDefendersForChallenger(challenger);
+    defenderSelect.innerHTML = "";
+
+    allowed.forEach((name) => {
+      const pl = getPlayerByName(name);
+      const label = pl?.rank ? `#${pl.rank} — ${name}` : name;
+      const o = document.createElement("option");
+      o.value = name;
+      o.textContent = label;
+      defenderSelect.appendChild(o);
+    });
+
+    // Keep selection if still allowed, otherwise pick first
+    if (allowed.includes(currentDefender)) defenderSelect.value = currentDefender;
+    else defenderSelect.value = allowed[0] || "";
+
+    // If nothing allowed (edge case: 1 player / bad state), disable
+    defenderSelect.disabled = allowed.length === 0;
+  }
+
   function populateSelects() {
     const challengerSelect = $("#challengerSelect");
     const defenderSelect = $("#defenderSelect");
@@ -538,25 +673,16 @@
     players.forEach((p) => {
       const o1 = document.createElement("option");
       o1.value = p.name;
-      o1.textContent = p.name;
+      o1.textContent = p.rank ? `#${p.rank} — ${p.name}` : p.name;
       challengerSelect.appendChild(o1);
-
-      const o2 = document.createElement("option");
-      o2.value = p.name;
-      o2.textContent = p.name;
-      defenderSelect.appendChild(o2);
     });
 
-    // Set defaults: challenger = rank 2, defender = rank 1 (if possible)
-    if (players.length >= 2) {
-      challengerSelect.value = players[1].name;
-      defenderSelect.value = players[0].name;
-    }
+    // Default challenger: rank 2 (else rank 1)
+    if (players.length >= 2) challengerSelect.value = players[1].name;
+    else if (players.length === 1) challengerSelect.value = players[0].name;
 
-    // prevent same value
-    if (challengerSelect.value === defenderSelect.value && players.length >= 2) {
-      defenderSelect.value = players[0].name === challengerSelect.value ? players[1].name : players[0].name;
-    }
+    // Build defender options according to the rules
+    rebuildDefenderOptions({ challengerSelect, defenderSelect });
   }
 
   function ensureSyncAndPinUI() {
@@ -794,7 +920,10 @@
       updateWinnerDisplay();
     });
 
-    challengerSelect.addEventListener("change", updateNames);
+    challengerSelect.addEventListener("change", () => {
+      rebuildDefenderOptions({ challengerSelect, defenderSelect });
+      updateNames();
+    });
     defenderSelect.addEventListener("change", updateNames);
 
     updateNames();
