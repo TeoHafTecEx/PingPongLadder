@@ -540,3 +540,14 @@ hr {
     scroll-behavior: auto !important;
   }
 }
+/* Fix dropdown option readability + highlight */
+select option {
+  background-color: #0b1220;
+  color: #ffffff;
+}
+select option:checked,
+select option:hover {
+  background-color: #1c2b45;
+  color: #ffffff;
+}
+
