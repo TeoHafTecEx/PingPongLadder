@@ -1,172 +1,215 @@
-<!-- =========================
-     rules.html
-     ========================= -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#070b12" />
-  <title>Rules • Complex Solutions Ladder</title>
-
-  <!-- Inter font -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
-    rel="stylesheet"
-  />
-
+  <title>Rules – Complex Solutions Ladder</title>
   <link rel="stylesheet" href="styles.css" />
-
-  <!-- FontAwesome (optional) -->
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-  />
-
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <script defer src="script.js"></script>
-
-  <script>
-    // Simple accordion toggle for rules sections (no dependencies)
-    document.addEventListener("DOMContentLoaded", () => {
-      document.querySelectorAll(".rules-section").forEach((sec) => {
-        sec.addEventListener("click", () => {
-          sec.classList.toggle("open");
-          const content = sec.querySelector(".rules-content");
-          if (!content) return;
-          content.classList.toggle("hide");
-        });
-      });
-
-      // Open first section by default
-      const first = document.querySelector(".rules-section");
-      if (first) {
-        first.classList.add("open");
-        const content = first.querySelector(".rules-content");
-        if (content) content.classList.remove("hide");
-      }
-    });
-  </script>
 </head>
 
 <body id="rules-page">
   <header class="container">
-    <div class="header-title">
-      <h1>Rules</h1>
-      <div class="name">Clear rules • No drama • One ladder</div>
-      <p>
-        These rules keep the ladder competitive, fair, and easy to manage. The server validates
-        challenges automatically when you submit a match.
-      </p>
+    <h1 class="header-title">Rules<span class="name">How It Works</span></h1>
+
+    <div class="search-bar">
+      <input type="text" id="ruleSearch" placeholder="Search rules…" aria-label="Search rules" />
+      <i class="fa-solid fa-search"></i>
     </div>
   </header>
 
   <main class="container">
-    <div class="card search-bar" style="margin-bottom: var(--space-3);">
-      <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-      <input
-        id="ruleSearch"
-        type="text"
-        placeholder="Search rules… (e.g. “challenge”, “swap”, “best of 3”)"
-        aria-label="Search rules"
-      />
-    </div>
-
-    <div class="rules-section card rule-card">
-      <h3>1) Match Format</h3>
-      <div class="rules-content hide">
-        <p><strong>Best of 3.</strong> First to <strong>2</strong> games wins the match.</p>
-        <p>Log the final match score as <strong>2–0</strong> or <strong>2–1</strong>.</p>
+    <div class="rules-section open">
+      <h3>Quick Summary (Read This First)</h3>
+      <div class="rules-content">
+        <p><strong>Upward challenge:</strong> You can challenge up to <strong>2 ranks above</strong> you.</p>
+        <p><strong>Push-down challenge:</strong> You can also challenge <strong>1 rank below</strong> you to keep the ladder moving.</p>
+        <p><strong>Best of 3:</strong> First to 11, win by 2.</p>
+        <p><strong>If you don’t play:</strong> After <strong>7 days</strong> without a match, you can drop ranks automatically.</p>
       </div>
     </div>
 
-    <div class="rules-section card rule-card">
-      <h3>2) Who You Can Challenge</h3>
-      <div class="rules-content hide">
-        <p>
-          You may challenge someone ranked up to <strong>2 positions above you</strong>.
-          That means you can challenge the player <strong>1</strong> spot above or <strong>2</strong>
-          spots above — not more.
-        </p>
-        <p>
-          The system checks this automatically and records whether the challenge was allowed.
-          If it’s not allowed, the match can still be logged, but it won’t swap the ladder.
-        </p>
+    <div class="rules-section">
+      <h3>Eligibility</h3>
+      <div class="rules-content">
+        <p>New players always join at the bottom.</p>
+        <p>Rank 1 sits at the top. Rankings are visible to all and update after every match.</p>
       </div>
     </div>
 
-    <div class="rules-section card rule-card">
-      <h3>3) Swap Rule</h3>
-      <div class="rules-content hide">
-        <p>
-          If the challenger wins an <strong>allowed</strong> challenge, the challenger and defender
-          <strong>swap positions</strong>.
-        </p>
-        <p>If the defender wins, the ladder stays the same.</p>
+    <div class="rules-section">
+      <h3>Challenge Rules (Who You Can Play)</h3>
+      <div class="rules-content">
+        <p><strong>Rule 1 — Challenge Up:</strong> You may challenge up to <strong>two ranks above</strong> you. (Example: if you are Rank 8, you can challenge Rank 7 or Rank 6.)</p>
+        <p><strong>Rule 2 — Push-Down Challenge:</strong> You may challenge <strong>one rank below</strong> you. (Example: if you are Rank 5, you can challenge Rank 6.)</p>
+        <p><strong>Rule 3 — No back-to-back repeats:</strong> You cannot challenge the same opponent twice in a row.</p>
+        <p><strong>Rule 4 — Chill window:</strong> If you lose a challenge, wait <strong>6–8 hours</strong> before issuing another challenge.</p>
+
+        <div class="rule-example">
+          <p><strong>Example ladder:</strong></p>
+          <p>#4 Judels<br />#5 Owen<br />#6 Cam<br />#7 Tash</p>
+          <p><strong>Owen (#5) can challenge:</strong></p>
+          <ul>
+            <li><strong>Up:</strong> Judels (#4) or (if allowed) the person at #3</li>
+            <li><strong>Down (push-down):</strong> Cam (#6)</li>
+          </ul>
+        </div>
       </div>
     </div>
 
-    <div class="rules-section card rule-card">
-      <h3>4) Stats & Streaks</h3>
-      <div class="rules-content hide">
-        <p>
-          Every match updates each player’s <strong>wins</strong>, <strong>losses</strong>,
-          <strong>streak</strong> and <strong>last played</strong>.
-        </p>
-        <p>
-          Streaks are tracked as a number:
-          <strong>+3</strong> means three wins in a row, <strong>-2</strong> means two losses in a row.
-        </p>
+    <div class="rules-section">
+      <h3>Match Format</h3>
+      <div class="rules-content">
+        <p>Matches are <strong>best of three games</strong> (first to win 2 games).</p>
+        <p>Each game is <strong>first to 11 points</strong>, <strong>win by two</strong>.</p>
       </div>
     </div>
 
-    <div class="rules-section card rule-card">
-      <h3>5) Integrity</h3>
-      <div class="rules-content hide">
-        <p>
-          Log matches honestly. If there’s a dispute, replay the match.
-          Keep it friendly — we’re here to compete, not to create admin.
-        </p>
+    <div class="rules-section">
+      <h3>Match Submission</h3>
+      <div class="rules-content">
+        <p>Record the <strong>date/time</strong>, <strong>challenger</strong>, <strong>defender</strong>, and final result (e.g. <strong>2–1</strong>) immediately after each match.</p>
+        <p>The ladder will update automatically when you submit the match.</p>
+        <p><strong>Tip:</strong> If the result is wrong, fix it quickly (don’t let the ladder drift).</p>
       </div>
     </div>
 
-    <div class="rules-section card rule-card">
-      <h3>6) What Happens If The Site Can’t Save?</h3>
-      <div class="rules-content hide">
-        <p>
-          If your internet is down or Google Apps Script is temporarily unavailable,
-          the match is saved <strong>locally</strong> on your device as “pending”.
-        </p>
-        <p>
-          Use <strong>Sync pending</strong> (on the matches page / add match page utility bar)
-          to upload pending matches later.
-        </p>
+    <div class="rules-section">
+      <h3>Ranking Movement (The Only Bit You Need To Remember)</h3>
+      <div class="rules-content">
+        <p>Movement depends on whether you challenged <strong>up</strong> or did a <strong>push-down</strong>.</p>
+
+        <p><strong>A) If you challenge UP (you’re below them)</strong></p>
+        <ul>
+          <li><strong>If you win:</strong> you take their spot (you swap positions).</li>
+          <li><strong>If you lose:</strong> nothing changes.</li>
+        </ul>
+
+        <div class="rule-example">
+          <p><strong>Example (challenge up):</strong></p>
+          <p>Before: #5 Owen challenges #4 Judels</p>
+          <p>If Owen wins: Owen becomes #4 and Judels becomes #5</p>
+          <p>If Owen loses: ladder stays the same</p>
+        </div>
+
+        <p><strong>B) If you do a PUSH-DOWN challenge (you’re above them by 1)</strong></p>
+        <ul>
+          <li><strong>If you win:</strong> the defender gets pushed down <strong>one rank</strong>.</li>
+          <li><strong>If you lose:</strong> you swap positions (because the lower rank beat you).</li>
+        </ul>
+
+        <div class="rule-example">
+          <p><strong>Example (push-down):</strong></p>
+          <p>Before: #5 Owen challenges #6 Cam</p>
+          <p>If Owen wins: Cam drops to #7, and the old #7 moves up to #6</p>
+          <p>If Owen loses: Owen and Cam swap (Cam becomes #5)</p>
+        </div>
+
+        <p><strong>Important:</strong> The ladder only moves based on the rules above — no “half moves” or negotiations.</p>
+      </div>
+    </div>
+
+    <div class="rules-section">
+      <h3>Forfeits</h3>
+      <div class="rules-content">
+        <p>A challenged player must play within <strong>two working days</strong>.</p>
+        <p>If they don’t play in time, it’s a <strong>forfeit</strong> (or a one-position drop) depending on the group’s decision.</p>
+        <p><strong>Simple rule:</strong> Don’t dodge. Play the match. Keep the ladder alive.</p>
+      </div>
+    </div>
+
+    <div class="rules-section">
+      <h3>Inactivity (So Nobody Camps Forever)</h3>
+      <div class="rules-content">
+        <p>If you don’t play ranked matches, you can drop automatically. The goal is to keep the ladder moving and fair.</p>
+
+        <ul>
+          <li><strong>7+ days inactive:</strong> drop <strong>1</strong> rank</li>
+          <li><strong>14+ days inactive:</strong> drop <strong>2</strong> ranks</li>
+          <li><strong>21+ days inactive:</strong> drop to the <strong>bottom</strong></li>
+        </ul>
+
+        <div class="rule-example">
+          <p><strong>Example:</strong> Kurt is Rank 3 and hasn’t played in 8 days → Kurt drops to Rank 4.</p>
+        </div>
+
+        <p><strong>Note:</strong> “Inactive” means no recorded match (win or loss). Even one match keeps you safe.</p>
+      </div>
+    </div>
+
+    <div class="rules-section">
+      <h3>House Rules (Keep It Simple)</h3>
+      <div class="rules-content">
+        <p><strong>Serves:</strong> Serves must be cross-court.</p>
+        <p><strong>Net rules:</strong> Net and over = re-serve. Net and off the table = you lose the point.</p>
+        <p><strong>Takeovers:</strong> You are allowed two takeovers; on your third, the serve must be legal or you lose the point.</p>
+      </div>
+    </div>
+
+    <div class="rules-section">
+      <h3>Disputes</h3>
+      <div class="rules-content">
+        <p>Replay any unclear point. If disagreement continues, replay the game.</p>
+        <p><strong>Golden rule:</strong> Keep it lekker — no prolonged arguments.</p>
+      </div>
+    </div>
+
+    <div class="rules-section">
+      <h3>Season &amp; Awards</h3>
+      <div class="rules-content">
+        <p>Each season runs for <strong>one month</strong>.</p>
+        <p>At the end of the season, we recognise:</p>
+        <ul>
+          <li><strong>Ladder Champion:</strong> Rank 1</li>
+          <li><strong>Most Successful Challenger:</strong> most challenge wins</li>
+          <li><strong>Giant Killer:</strong> most wins against higher-ranked players</li>
+          <li><strong>(Optional) Bully:</strong> most successful push-down wins</li>
+          <li><strong>(Optional) Grinder:</strong> most matches played</li>
+        </ul>
+        <p>An optional punishment for last place can be agreed separately.</p>
+      </div>
+    </div>
+
+    <div class="rules-section">
+      <h3>Code of Conduct</h3>
+      <div class="rules-content">
+        <p>Play hard but have fun. Trash talk within reason is encouraged; rage quitting is prohibited.</p>
+        <p>The loser retrieves balls. Respect the table, the ladder and your opponents.</p>
       </div>
     </div>
   </main>
 
-  <nav class="bottom-nav" aria-label="Primary navigation">
-    <a href="index.html">
-      <span class="nav-icon">📊</span>
-      <span>Leaderboard</span>
-    </a>
-    <a href="add-match.html">
-      <span class="nav-icon">➕</span>
-      <span>Add Match</span>
-    </a>
-    <a href="matches.html">
-      <span class="nav-icon">🕑</span>
-      <span>Matches</span>
-    </a>
-    <a href="awards.html">
-      <span class="nav-icon">🏆</span>
-      <span>Awards</span>
-    </a>
-    <a href="rules.html" class="active">
-      <span class="nav-icon">📖</span>
-      <span>Rules</span>
-    </a>
+  <nav class="bottom-nav">
+    <a href="index.html"><span class="nav-icon">📊</span><span>Leaderboard</span></a>
+    <a href="add-match.html"><span class="nav-icon">➕</span><span>Add Match</span></a>
+    <a href="matches.html"><span class="nav-icon">🕑</span><span>Matches</span></a>
+    <a href="awards.html"><span class="nav-icon">🏆</span><span>Awards</span></a>
+    <a href="rules.html" class="active"><span class="nav-icon">📖</span><span>Rules</span></a>
   </nav>
+
+  <!-- Inline script for rules page interaction -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      // Toggle open/closed state on rule sections
+      document.querySelectorAll(".rules-section h3").forEach(function (header) {
+        header.addEventListener("click", function () {
+          header.parentElement.classList.toggle("open");
+        });
+      });
+
+      // Search/filter rules
+      const searchInput = document.getElementById("ruleSearch");
+      if (searchInput) {
+        searchInput.addEventListener("input", function () {
+          const term = searchInput.value.toLowerCase();
+          document.querySelectorAll(".rules-section").forEach(function (section) {
+            const text = section.textContent.toLowerCase();
+            section.style.display = text.includes(term) ? "" : "none";
+          });
+        });
+      }
+    });
+  </script>
 </body>
 </html>
