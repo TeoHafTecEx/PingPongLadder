@@ -1,30 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#070b12" />
   <title>Complex Solutions Ladder</title>
-  <link rel="stylesheet" href="styles.css">
-  <!-- FontAwesome for icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Application script -->
+
+  <!-- Inter font (optional but makes it look way more modern) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  />
+
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- FontAwesome (optional; your nav uses emoji but keep it for future icons) -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+  />
+
+  <!-- App script -->
   <script defer src="script.js"></script>
 </head>
+
 <body id="leaderboard-page">
   <header class="container">
-    <!-- Leaderboard title with subtitle for additional context -->
-    <h1 class="header-title">Leaderboard<span class="name">Complex Solutions Ladder</span></h1>
+    <div class="header-title">
+      <h1>Table Tennis Ladder</h1>
+      <div class="name">Complex Solutions</div>
+      <p>
+        One ladder. One source of truth. Log matches and the rankings update automatically.
+      </p>
+    </div>
   </header>
+
   <main class="container">
     <h2 class="section-title">Current Rankings</h2>
     <div id="leaderboard" aria-live="polite"></div>
   </main>
-  <nav class="bottom-nav">
-    <a href="index.html" class="active"><span class="nav-icon">📊</span><span>Leaderboard</span></a>
-    <a href="add-match.html"><span class="nav-icon">➕</span><span>Add Match</span></a>
-    <a href="matches.html"><span class="nav-icon">🕑</span><span>Matches</span></a>
-    <a href="awards.html"><span class="nav-icon">🏆</span><span>Awards</span></a>
-    <a href="rules.html"><span class="nav-icon">📖</span><span>Rules</span></a>
+
+  <nav class="bottom-nav" aria-label="Primary navigation">
+    <a href="index.html" class="active">
+      <span class="nav-icon">📊</span>
+      <span>Leaderboard</span>
+    </a>
+    <a href="add-match.html">
+      <span class="nav-icon">➕</span>
+      <span>Add Match</span>
+    </a>
+    <a href="matches.html">
+      <span class="nav-icon">🕑</span>
+      <span>Matches</span>
+    </a>
+    <a href="awards.html">
+      <span class="nav-icon">🏆</span>
+      <span>Awards</span>
+    </a>
+    <a href="rules.html">
+      <span class="nav-icon">📖</span>
+      <span>Rules</span>
+    </a>
   </nav>
 </body>
 </html>

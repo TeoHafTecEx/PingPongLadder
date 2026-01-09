@@ -1,33 +1,31 @@
 /*
- * Complex Solutions Table Tennis Ladder — v2 UI (Refined)
- * Design Concept: "Neon Noir Sport"
+ * Complex Solutions Table Tennis Ladder — v2 UI
  *
- * Edits (less-is-more):
- * - Cleaner background (single spotlight)
- * - Stronger hierarchy (podium top 3 via :nth-child)
- * - Tabular numbers for scoreboard alignment
- * - Tactile Add Match winner glow + improved score controls
- * - Dock-like bottom nav with active glow
- * - Fix native <select> dropdown option readability
+ * Goals:
+ * - Modern, premium dark UI (glass + subtle gradients)
+ * - Responsive + scales cleanly from mobile to ultrawide
+ * - Better typography, spacing, and component consistency
+ * - Works with your existing HTML classes/IDs (no markup changes required)
  */
 
 /* -----------------------------
    Design tokens
 ------------------------------ */
 :root {
-  --bg: #050505;
+  --bg: #070b12;
+  --bg2: #0a1020;
 
   --text: rgba(255, 255, 255, 0.92);
-  --muted: rgba(255, 255, 255, 0.68);
-  --subtle: rgba(255, 255, 255, 0.52);
+  --muted: rgba(255, 255, 255, 0.72);
+  --subtle: rgba(255, 255, 255, 0.55);
 
-  --border: rgba(255, 255, 255, 0.14);
-  --border-strong: rgba(255, 255, 255, 0.22);
+  --border: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.18);
 
   --panel: rgba(255, 255, 255, 0.06);
-  --panel-2: rgba(255, 255, 255, 0.09);
+  --panel-2: rgba(255, 255, 255, 0.085);
 
-  --shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+  --shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
 
   --radius-lg: 18px;
   --radius-md: 14px;
@@ -71,10 +69,12 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 
-  /* Neon Noir: clean base + single spotlight */
+  /* Premium dark backdrop */
   background:
-    radial-gradient(900px 500px at 50% 0%, rgba(58,160,255,.18), transparent 62%),
-    var(--bg);
+    radial-gradient(1200px 700px at 15% -10%, rgba(58,160,255,.22), transparent 60%),
+    radial-gradient(900px 650px at 105% 0%, rgba(228,26,103,.18), transparent 55%),
+    radial-gradient(700px 600px at 70% 115%, rgba(58,160,255,.12), transparent 55%),
+    linear-gradient(180deg, var(--bg), var(--bg2));
 }
 
 /* Subtle grain for depth */
@@ -84,7 +84,7 @@ body::before {
   inset: 0;
   pointer-events: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E");
-  opacity: 0.08;
+  opacity: 0.12;
   mix-blend-mode: overlay;
 }
 
@@ -160,14 +160,14 @@ h2 {
 .card {
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.085),
-    rgba(255, 255, 255, 0.045)
+    rgba(255, 255, 255, 0.09),
+    rgba(255, 255, 255, 0.05)
   );
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: clamp(14px, 1.7vw, 18px);
   box-shadow: var(--shadow);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(10px);
 }
 
 .card:hover {
@@ -195,46 +195,28 @@ h2 {
   }
 }
 
-/* Player row card */
+/* Player row card (your JS applies card + leaderboard-card too; base still works) */
 .card.player-row,
 .player-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-
-  /* Needed for “massive rank number” overlay */
-  position: relative;
-  overflow: hidden;
 }
 
-/* Rank number — massive + dim (scoreboard feel) */
+/* Rank pill */
 .player-rank,
 .rank-badge {
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1;
-
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-
-  background: transparent;
-  border: none;
-
-  font-weight: 900;
-  font-size: 2.2rem;
-  letter-spacing: -0.03em;
-
-  color: rgba(255, 255, 255, 0.10);
-  pointer-events: none;
-}
-
-/* Ensure content sits above the dim rank */
-.player-name,
-.player-score {
-  position: relative;
-  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 54px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
 /* Name */
@@ -242,42 +224,12 @@ h2 {
   font-weight: 800;
   letter-spacing: -0.015em;
   font-size: 1.05rem;
-  color: rgba(255, 255, 255, 0.95);
-  padding-left: 44px; /* space so name doesn't sit on rank */
 }
 
-/* Stats: higher contrast separation + tabular alignment */
+/* Meta / stats blocks */
 .player-score {
-  color: rgba(255, 255, 255, 0.62);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1;
-}
-
-/* Podium hierarchy (Top 3) */
-#leaderboard > .card:nth-child(1) {
-  border-color: rgba(255, 215, 0, 0.55);
-  background:
-    radial-gradient(500px 220px at 20% 0%, rgba(255, 215, 0, 0.14), transparent 65%),
-    linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.045));
-  transform: scale(1.02);
-}
-#leaderboard > .card:nth-child(1) .player-name {
-  font-size: 1.15rem;
-}
-
-#leaderboard > .card:nth-child(2) {
-  border-color: rgba(192, 192, 192, 0.55);
-  background:
-    radial-gradient(500px 220px at 20% 0%, rgba(192, 192, 192, 0.10), transparent 70%),
-    linear-gradient(180deg, rgba(255,255,255,0.085), rgba(255,255,255,0.045));
-}
-
-#leaderboard > .card:nth-child(3) {
-  border-color: rgba(205, 127, 50, 0.55);
-  background:
-    radial-gradient(500px 220px at 20% 0%, rgba(205, 127, 50, 0.10), transparent 70%),
-    linear-gradient(180deg, rgba(255,255,255,0.085), rgba(255,255,255,0.045));
+  color: var(--muted);
+  font-weight: 700;
 }
 
 /* -----------------------------
@@ -325,7 +277,7 @@ select:focus-visible {
   box-shadow: var(--focus);
 }
 
-/* Primary action */
+/* Primary action (use by adding .primary in HTML if you want) */
 .button.primary,
 button.primary {
   border-color: rgba(228, 26, 103, 0.35);
@@ -334,6 +286,19 @@ button.primary {
     rgba(228, 26, 103, 0.22),
     rgba(255, 255, 255, 0.06)
   );
+}
+
+/* Score buttons (your markup uses .score-button) */
+.score-button {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  font-size: 18px;
+  font-weight: 900;
 }
 
 /* -----------------------------
@@ -355,18 +320,12 @@ select {
   cursor: pointer;
 }
 
-/* Fix native dropdown option readability */
-select option {
-  background-color: #0b1220;
-  color: #ffffff;
-}
-
 input::placeholder {
   color: rgba(255, 255, 255, 0.45);
 }
 
 /* -----------------------------
-   Add Match page: tactile scoreboard UI
+   Add Match page: scoreboard UI
 ------------------------------ */
 .scoreboard {
   display: grid;
@@ -384,17 +343,6 @@ input::placeholder {
   position: relative;
 }
 
-/* Winner = whole card lights up (uses :has, modern browsers) */
-#challengerCard:has(.winner-label:not(.hide)),
-#defenderCard:has(.winner-label:not(.hide)) {
-  border-color: rgba(0, 255, 150, 0.65);
-  background:
-    radial-gradient(520px 240px at 20% 0%, rgba(0,255,150,0.14), transparent 70%),
-    linear-gradient(180deg, rgba(255,255,255,0.085), rgba(255,255,255,0.045));
-  box-shadow: 0 0 30px rgba(0, 255, 150, 0.12), var(--shadow);
-}
-
-/* Winner label can exist but doesn't need to be visually dominant */
 .winner-label {
   display: inline-flex;
   align-items: center;
@@ -408,48 +356,20 @@ input::placeholder {
   font-weight: 800;
 }
 
-/* Score controls: bigger display + more tactile buttons */
 .score-controls {
   margin-top: 12px;
   display: flex;
-  align-items: stretch;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
 .score-value {
-  flex: 1;
   min-width: 56px;
   text-align: center;
-  font-size: 42px;
+  font-size: 34px;
   font-weight: 900;
   letter-spacing: -0.03em;
-
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1;
-}
-
-/* Bigger buttons, more satisfying */
-.score-button {
-  width: 64px;
-  height: 64px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  border-radius: 50%;
-  font-size: 24px;
-  font-weight: 900;
-
-  background: rgba(255, 255, 255, 0.10);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-}
-
-.score-button:active {
-  background: rgba(255, 255, 255, 0.92);
-  color: #050505;
-  transform: scale(0.95);
 }
 
 #summary.card,
@@ -532,7 +452,7 @@ input::placeholder {
 }
 
 /* -----------------------------
-   Bottom navigation (Dock)
+   Bottom navigation
 ------------------------------ */
 .bottom-nav {
   position: fixed;
@@ -547,32 +467,26 @@ input::placeholder {
   gap: 8px;
 
   padding: 10px;
-  border-radius: 20px;
+  border-radius: 18px;
 
-  /* iOS Dock feel */
-  background: rgba(0, 0, 0, 0.62);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.60);
-  backdrop-filter: blur(20px);
+  background: rgba(0, 0, 0, 0.52);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(14px);
   z-index: 999;
 }
 
 .bottom-nav a {
-  position: relative;
-
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 6px;
 
   border-radius: 14px;
   color: rgba(255, 255, 255, 0.78);
-
-  /* Icon-first navigation */
-  font-size: 0.72rem;
-  font-weight: 650;
-
+  font-size: 0.8rem;
+  font-weight: 750;
   padding: 8px 6px;
 
   transition: background 120ms ease, color 120ms ease, transform 120ms ease;
@@ -586,34 +500,23 @@ input::placeholder {
 
 .bottom-nav a.active {
   color: rgba(255, 255, 255, 0.95);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(228, 26, 103, 0.20);
+  background: linear-gradient(
+    180deg,
+    rgba(228, 26, 103, 0.20),
+    rgba(255, 255, 255, 0.06)
+  );
+  border: 1px solid rgba(228, 26, 103, 0.22);
 }
 
-/* Active glow “under” the icon */
-.bottom-nav a.active::after {
-  content: "";
-  position: absolute;
-  bottom: 6px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 38px;
-  height: 6px;
-  border-radius: 999px;
-  background: rgba(228, 26, 103, 0.85);
-  filter: blur(6px);
-  opacity: 0.75;
-}
-
-/* Icon size / alignment */
+/* Icon size / alignment (FontAwesome) */
 .bottom-nav a i,
 .nav-icon {
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1;
-  opacity: 0.95;
+  opacity: 0.92;
 }
 
-/* Desktop: slightly wider dock */
+/* Desktop: slightly tighter nav, more “app-like” */
 @media (min-width: 980px) {
   .bottom-nav {
     width: min(760px, calc(100% - 40px));
@@ -630,10 +533,21 @@ hr {
   margin: var(--space-4) 0;
 }
 
-/* Reduce motion */
+/* Reduce motion if user requests */
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;
     scroll-behavior: auto !important;
   }
 }
+/* Fix dropdown option readability + highlight */
+select option {
+  background-color: #0b1220;
+  color: #ffffff;
+}
+select option:checked,
+select option:hover {
+  background-color: #1c2b45;
+  color: #ffffff;
+}
+

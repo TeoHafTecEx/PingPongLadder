@@ -1,27 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Match History – Complex Solutions Ladder</title>
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#070b12" />
+  <title>Matches • Complex Solutions Ladder</title>
+
+  <!-- Inter font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  />
+
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- FontAwesome (optional) -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+  />
+
   <script defer src="script.js"></script>
 </head>
+
 <body id="matches-page">
   <header class="container">
-    <!-- Page title with smaller descriptor below -->
-    <h1 class="header-title">Matches<span class="name">History</span></h1>
+    <div class="header-title">
+      <h1>Matches</h1>
+      <div class="name">History • Results • Swaps</div>
+      <p>All recorded matches, newest first. Use “Sync pending” if you logged matches offline.</p>
+    </div>
   </header>
+
   <main class="container">
+    <h2 class="section-title">Match History</h2>
     <div id="matchesList" aria-live="polite"></div>
   </main>
-  <nav class="bottom-nav">
-    <a href="index.html"><span class="nav-icon">📊</span><span>Leaderboard</span></a>
-    <a href="add-match.html"><span class="nav-icon">➕</span><span>Add Match</span></a>
-    <a href="matches.html" class="active"><span class="nav-icon">🕑</span><span>Matches</span></a>
-    <a href="awards.html"><span class="nav-icon">🏆</span><span>Awards</span></a>
-    <a href="rules.html"><span class="nav-icon">📖</span><span>Rules</span></a>
+
+  <nav class="bottom-nav" aria-label="Primary navigation">
+    <a href="index.html">
+      <span class="nav-icon">📊</span>
+      <span>Leaderboard</span>
+    </a>
+    <a href="add-match.html">
+      <span class="nav-icon">➕</span>
+      <span>Add Match</span>
+    </a>
+    <a href="matches.html" class="active">
+      <span class="nav-icon">🕑</span>
+      <span>Matches</span>
+    </a>
+    <a href="awards.html">
+      <span class="nav-icon">🏆</span>
+      <span>Awards</span>
+    </a>
+    <a href="rules.html">
+      <span class="nav-icon">📖</span>
+      <span>Rules</span>
+    </a>
   </nav>
 </body>
 </html>
