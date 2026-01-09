@@ -1,129 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#070b12" />
-  <title>Add Match • Complex Solutions Ladder</title>
-
-  <!-- Inter font -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
-    rel="stylesheet"
-  />
-
-  <link rel="stylesheet" href="styles.css" />
-
-  <!-- FontAwesome (optional) -->
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-  />
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Match – Complex Solutions Ladder</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script defer src="script.js"></script>
 </head>
-
 <body id="add-match-page">
   <header class="container">
-    <div class="header-title">
-      <h1>Add Match</h1>
-      <div class="name">Best of 3 • First to 2</div>
-      <p>
-        Select challenger and defender, tap the score buttons, and confirm. The server validates
-        challenge rules and updates the ladder automatically.
-      </p>
-    </div>
+    <!-- Primary heading with accent underline.  The span below provides a smaller tagline that sits
+         beneath the main heading and is styled by the CSS .header-title .name selector. -->
+    <h1 class="header-title">Add Match<span class="name">Best of 3 • First to 2</span></h1>
   </header>
-
   <main class="container">
-    <!-- Selectors -->
-    <div class="card" style="margin-bottom: var(--space-3);">
-      <div style="display:grid; gap: 12px; grid-template-columns: 1fr;">
-        <div>
-          <div class="section-title" style="margin:0 0 8px 0;">Challenger</div>
-          <select id="challengerSelect" aria-label="Select challenger"></select>
-        </div>
-        <div>
-          <div class="section-title" style="margin:0 0 8px 0;">Defender</div>
-          <select id="defenderSelect" aria-label="Select defender"></select>
-        </div>
-      </div>
+    <div class="card">
+      <label for="challengerSelect">Challenger</label><br>
+      <select id="challengerSelect" aria-label="Select challenger"></select>
+      <br><br>
+      <label for="defenderSelect">Defender</label><br>
+      <select id="defenderSelect" aria-label="Select defender"></select>
     </div>
-
-    <!-- Scoreboard -->
-    <div class="scoreboard">
-      <!-- Challenger -->
-      <div id="challengerCard" class="card">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-          <div>
-            <div class="section-title" style="margin:0 0 6px 0;">Challenger</div>
-            <div id="challengerName" class="player-name">—</div>
-          </div>
-          <div id="challengerWinner" class="winner-label hide">Winner</div>
-        </div>
-
+    <div id="scoreboard" class="scoreboard hide" aria-live="polite">
+      <div class="player-score" id="challengerCard">
+        <div class="name" id="challengerName"></div>
         <div class="score-controls">
-          <button id="challengerMinus" class="score-button" type="button" aria-label="Decrease challenger score">−</button>
-          <div id="challengerScore" class="score-value">0</div>
-          <button id="challengerPlus" class="score-button" type="button" aria-label="Increase challenger score">+</button>
+          <button class="score-button" id="challengerMinus">−</button>
+          <span class="score-value" id="challengerScore">0</span>
+          <button class="score-button" id="challengerPlus">+</button>
         </div>
+        <span class="winner-label hide" id="challengerWinner">Winner</span>
       </div>
-
-      <!-- Defender -->
-      <div id="defenderCard" class="card">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-          <div>
-            <div class="section-title" style="margin:0 0 6px 0;">Defender</div>
-            <div id="defenderName" class="player-name">—</div>
-          </div>
-          <div id="defenderWinner" class="winner-label hide">Winner</div>
-        </div>
-
+      <div class="player-score" id="defenderCard">
+        <div class="name" id="defenderName"></div>
         <div class="score-controls">
-          <button id="defenderMinus" class="score-button" type="button" aria-label="Decrease defender score">−</button>
-          <div id="defenderScore" class="score-value">0</div>
-          <button id="defenderPlus" class="score-button" type="button" aria-label="Increase defender score">+</button>
+          <button class="score-button" id="defenderMinus">−</button>
+          <span class="score-value" id="defenderScore">0</span>
+          <button class="score-button" id="defenderPlus">+</button>
         </div>
+        <span class="winner-label hide" id="defenderWinner">Winner</span>
       </div>
     </div>
-
-    <!-- Summary + confirm -->
-    <div id="summary" class="card hide" style="margin-top: var(--space-3);"></div>
-
-    <div style="margin-top: var(--space-3); display:flex; gap:12px; flex-wrap:wrap;">
-      <button id="confirmButton" class="button primary hide" type="button">
-        Confirm Match
-      </button>
-
-      <a href="matches.html" class="button" style="display:inline-flex; align-items:center; justify-content:center;">
-        View Matches
-      </a>
-    </div>
+    <div id="summary" class="summary hide"></div>
+    <button id="confirmButton" class="button hide">Confirm Match</button>
   </main>
-
-  <nav class="bottom-nav" aria-label="Primary navigation">
-    <a href="index.html">
-      <span class="nav-icon">📊</span>
-      <span>Leaderboard</span>
-    </a>
-    <a href="add-match.html" class="active">
-      <span class="nav-icon">➕</span>
-      <span>Add Match</span>
-    </a>
-    <a href="matches.html">
-      <span class="nav-icon">🕑</span>
-      <span>Matches</span>
-    </a>
-    <a href="awards.html">
-      <span class="nav-icon">🏆</span>
-      <span>Awards</span>
-    </a>
-    <a href="rules.html">
-      <span class="nav-icon">📖</span>
-      <span>Rules</span>
-    </a>
+  <nav class="bottom-nav">
+    <a href="index.html"><span class="nav-icon">📊</span><span>Leaderboard</span></a>
+    <a href="add-match.html" class="active"><span class="nav-icon">➕</span><span>Add Match</span></a>
+    <a href="matches.html"><span class="nav-icon">🕑</span><span>Matches</span></a>
+    <a href="awards.html"><span class="nav-icon">🏆</span><span>Awards</span></a>
+    <a href="rules.html"><span class="nav-icon">📖</span><span>Rules</span></a>
   </nav>
 </body>
 </html>
