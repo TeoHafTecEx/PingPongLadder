@@ -1,61 +1,82 @@
 # 🏓 Table Tennis Ladder v2
 
-A fully self-hosted, single-file table tennis ladder app — no backend, no Google Sheets, no dependencies beyond a browser.
+A fully self-hosted table tennis ladder — static site on GitHub Pages, with **GitHub itself as the shared real-time database** via the GitHub Contents API.
 
-## Quick Start
+No backend. No Google Sheets. No server. Just one `index.html` and a `data.json`.
 
-1. **Host on GitHub Pages:**
-   - Create a new GitHub repo
-   - Drop `index.html` into the root
-   - Go to Settings → Pages → Deploy from `main` branch, root (`/`)
-   - Your ladder is live at `https://yourusername.github.io/your-repo`
+---
 
-2. **Or just open locally:**
-   - Double-click `index.html` — it works straight from your file system
+## How it works
 
-## Features
+All ladder data lives in `data.json` in this repo. The app reads and writes it directly via the GitHub API using a Personal Access Token stored locally in each user's browser. Everyone hitting the same GitHub Pages URL reads from and writes to the same file — shared state, for real.
 
-- **📊 Leaderboard** — ranked players with W/L, streaks, win%, last played
-- **➕ Add Match** — scoreboard UI, challenge validation, instant ladder update
-- **🕑 Match History** — full log with direction/movement badges, search filter
-- **🏆 Awards** — auto-computed: Champion, Top Scorer, On Fire, Giant Killer, Most Active, Best Win Rate
-- **📖 Rules** — full rule set with accordion sections and search
-- **🔐 Admin Panel** — PIN-protected: add/remove/reorder players, edit league name, delete matches, reset data
+---
 
-## How Data is Stored
+## One-time setup (do this once)
 
-All data lives in the browser's `localStorage`. This means:
+### 1. Create `data.json` in the repo root
 
-- ✅ **Shared device** (e.g. office tablet): everyone uses the same data
-- ⚠️ **Different devices**: each browser has its own copy — use a shared device or hosted URL
-- The hosted GitHub Pages URL is the recommended setup for a shared office ladder
+```json
+{"leagueName":"Complex Solutions","players":[],"matches":[],"nextMatchId":1}
+```
 
-## Admin Access
+### 2. Enable GitHub Pages
 
-1. Go to the **Leaderboard** page and scroll to the **Admin** section
-2. Enter your PIN (or leave blank to set one on first access)
-3. Add players, reorder rankings, reset data
+Settings → Pages → Deploy from `main` branch, root (`/`). Your app will be live at:
+```
+https://YOUR-ORG.github.io/YOUR-REPO
+```
 
-## Challenge Rules (built-in logic)
+### 3. Each person who logs matches does this once on their device
 
-| Situation | If Challenger Wins | If Challenger Loses |
+1. Open the GitHub Pages URL
+2. You'll see the setup screen — fill in:
+   - **GitHub Owner/Org** — your GitHub username or org name
+   - **Repository Name** — e.g. `tt-ladder`
+   - **Branch** — `main` (usually)
+   - **Personal Access Token** — create one at [github.com/settings/personal-access-tokens/new](https://github.com/settings/personal-access-tokens/new)
+
+#### Token permissions (fine-grained)
+- Repository access: **this repo only**
+- Repository permissions: **Contents → Read and Write**
+
+That's it. The token is stored only in that person's browser (`localStorage`). It's never sent anywhere except the GitHub API.
+
+---
+
+## Usage
+
+| Page | What it does |
+|---|---|
+| **Ladder** | Live rankings with W/L, streaks, win%, last played |
+| **Match** | Score a match, validates challenge rules, saves to GitHub |
+| **History** | All matches with direction/movement badges, search |
+| **Awards** | Auto-computed: Champion, Top Scorer, On Fire, Giant Killer, Best Win Rate, Most Active |
+| **Rules** | Full rule set, accordion + search |
+| **Admin** | PIN-protected: add/remove/reorder players, league name, reset data |
+
+---
+
+## Challenge rules (built into the app)
+
+| Type | Challenger wins | Challenger loses |
 |---|---|---|
 | Challenge Up (1–2 ranks above) | Swap positions | No change |
-| Push-Down (1 rank below) | Defender drops one more rank | Swap positions |
-| Invalid challenge | Match recorded, no movement | Match recorded, no movement |
+| Push-Down (1 rank below you) | Defender drops one more rank | Swap |
+| Invalid (too far / wrong direction) | Match recorded, no ladder movement | Same |
 
-## Customisation
+---
 
-Everything is in `index.html`. Key areas:
+## Season reset
 
-- **League name**: change in Admin panel (or edit `leagueName` in `defaultState()`)
-- **Players**: add via Admin panel
-- **Colors/fonts**: edit the `:root` CSS variables at the top of the `<style>` block
-- **Rules text**: edit the `rules` array in `renderRules()`
+At end of season:
+1. Unlock Admin → **Reset All Matches** (clears history, resets stats, keeps ranking order)
+2. Or **Reset Everything** to start from zero
 
-## Resetting / Season Change
+---
 
-At the end of a season:
-1. Unlock Admin
-2. Use **"Reset All Matches"** to clear history and stats while keeping the current ladder order
-3. Or **"Reset Everything"** to start from scratch
+## Notes
+
+- **Concurrent writes**: if two people submit a match at the exact same moment, one will get a GitHub 409 conflict. The app fetches the latest SHA before every write to minimise this. In practice it's rarely an issue in an office setting.
+- **Read-only viewers** don't need a token — they can read `data.json` directly or just refresh the app (the Refresh button fetches the latest without a token... actually a token is needed for private repos; for public repos, reads are unauthenticated).
+- **Private vs public repo**: works with both. For a public repo, anyone can read the data. For a private repo, only people with a token can read. Either is fine for an office ladder.

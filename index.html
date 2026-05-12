@@ -10,260 +10,272 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
 :root{
-  --bg:#0c0c10;
-  --bg2:#111118;
-  --bg3:#18181f;
-  --surface:rgba(255,255,255,0.05);
-  --surface2:rgba(255,255,255,0.08);
-  --border:rgba(255,255,255,0.09);
-  --border2:rgba(255,255,255,0.16);
-  --text:#f0f0f4;
-  --muted:#8b8b9e;
-  --subtle:#5a5a70;
-  --gold:#f5c842;
-  --silver:#b0bec5;
-  --bronze:#cd7f32;
-  --accent:#7c6af0;
-  --accent2:#c084fc;
-  --green:#22d3a0;
-  --red:#f87171;
-  --orange:#fb923c;
-  --nav:64px;
-  --r:14px;
-  --r2:10px;
-  --max:860px;
+  --bg:#0c0c10;--bg2:#111118;--bg3:#18181f;
+  --surface:rgba(255,255,255,0.05);--surface2:rgba(255,255,255,0.08);
+  --border:rgba(255,255,255,0.09);--border2:rgba(255,255,255,0.16);
+  --text:#f0f0f4;--muted:#8b8b9e;--subtle:#5a5a70;
+  --gold:#f5c842;--silver:#b0bec5;--bronze:#cd7f32;
+  --accent:#7c6af0;--accent2:#c084fc;--green:#22d3a0;--red:#f87171;--orange:#fb923c;
+  --nav:64px;--r:14px;--r2:10px;--max:860px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-body{background:
-  radial-gradient(ellipse 60% 40% at 0% 0%,rgba(124,106,240,.15),transparent),
-  radial-gradient(ellipse 50% 35% at 100% 100%,rgba(192,132,252,.1),transparent),
-  var(--bg);min-height:100dvh}
+body{background:radial-gradient(ellipse 60% 40% at 0% 0%,rgba(124,106,240,.15),transparent),radial-gradient(ellipse 50% 35% at 100% 100%,rgba(192,132,252,.1),transparent),var(--bg);min-height:100dvh}
 a{color:inherit;text-decoration:none}
 p{color:var(--muted);line-height:1.6}
 h1{font-size:clamp(20px,4vw,32px);font-weight:800;letter-spacing:-0.03em}
 h2{font-size:18px;font-weight:700;letter-spacing:-0.02em}
 h3{font-size:15px;font-weight:700}
-.mono{font-family:'JetBrains Mono',monospace}
 .container{max-width:var(--max);margin:0 auto;padding:20px 16px calc(var(--nav)+24px)}
 .hide{display:none!important}
 
-/* ── HEADER ── */
+/* SETUP */
+#setup-screen{min-height:100dvh;display:flex;align-items:flex-start;justify-content:center;padding:24px;overflow-y:auto}
+.setup-box{background:var(--bg2);border:1px solid var(--border2);border-radius:20px;padding:32px 28px;width:100%;max-width:520px;margin:auto}
+.setup-box h1{margin-bottom:4px}
+.setup-sub{font-size:12px;color:var(--subtle);text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin-bottom:28px}
+.setup-step{margin-bottom:22px}
+.step-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:var(--accent);border-radius:50%;font-size:11px;font-weight:800;color:#fff;margin-right:8px;flex-shrink:0}
+.step-title{font-size:14px;font-weight:700;display:flex;align-items:center;margin-bottom:8px}
+.step-body{font-size:13px;color:var(--muted);line-height:1.6;padding-left:30px}
+.step-body a{color:var(--accent2);text-decoration:underline}
+.step-body strong{color:var(--text)}
+pre.code-block{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--muted);margin:8px 0;overflow-x:auto;font-family:'JetBrains Mono',monospace;white-space:pre-wrap;word-break:break-all}
+.form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.form-label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--subtle);font-weight:700}
+input[type=text],input[type=password],select{width:100%;padding:12px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);color:var(--text);font-family:'Syne',sans-serif;font-size:14px;font-weight:600;outline:none;transition:border-color .15s}
+input:focus,select:focus{border-color:var(--accent)}
+select option{background:#18181f;color:#f0f0f4}
+.form-hint{font-size:12px;color:var(--subtle);margin-top:4px;line-height:1.5}
+.sep{border:none;border-top:1px solid var(--border);margin:22px 0}
+
+/* LOADING */
+#loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:9000}
+.spinner{width:32px;height:32px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loading-screen p{font-size:14px;color:var(--subtle)}
+#sync-bar{position:fixed;top:0;left:0;right:0;height:3px;z-index:9001;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .4s ease}
+#sync-bar.show{animation:syncAnim 1.4s ease-in-out infinite}
+@keyframes syncAnim{0%{transform:scaleX(0);opacity:1}60%{transform:scaleX(.8);opacity:1}100%{transform:scaleX(1);opacity:0}}
+
+/* PAGE HEADER */
 .page-header{padding:28px 16px 8px;max-width:var(--max);margin:0 auto}
 .page-header h1{background:linear-gradient(135deg,var(--text) 0%,var(--muted) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .page-header .sub{font-size:13px;color:var(--subtle);margin-top:4px;font-weight:500;text-transform:uppercase;letter-spacing:.08em}
 
-/* ── TABS ── */
-.tabs{display:flex;gap:2px;padding:4px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:20px}
-.tab-btn{flex:1;padding:9px 8px;border-radius:9px;border:none;background:none;color:var(--muted);font-family:'Syne',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
-.tab-btn.active{background:var(--surface2);color:var(--text);border:1px solid var(--border2)}
-
-/* ── CARDS ── */
+/* CARDS */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;transition:border-color .15s}
 .card:hover{border-color:var(--border2)}
-.card-sm{padding:12px 14px}
 
-/* ── LEADERBOARD ── */
-#leaderboard-view{display:flex;flex-direction:column;gap:8px}
-.player-card{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:12px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);transition:border-color .2s,transform .15s;cursor:default;position:relative;overflow:hidden}
+/* LEADERBOARD */
+.player-card{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:12px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);transition:border-color .2s,transform .15s;position:relative;overflow:hidden}
 .player-card::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:0;background:linear-gradient(90deg,rgba(124,106,240,.06),transparent);transition:opacity .2s}
 .player-card:hover::before{opacity:1}
 .player-card:hover{border-color:var(--border2);transform:translateX(2px)}
-.player-card.rank-1{border-color:rgba(245,200,66,.25);background:linear-gradient(90deg,rgba(245,200,66,.07),var(--surface))}
-.player-card.rank-2{border-color:rgba(176,190,197,.18)}
-.player-card.rank-3{border-color:rgba(205,127,50,.18)}
+.player-card.r1{border-color:rgba(245,200,66,.25);background:linear-gradient(90deg,rgba(245,200,66,.07),var(--surface))}
+.player-card.r2{border-color:rgba(176,190,197,.18)}
+.player-card.r3{border-color:rgba(205,127,50,.18)}
 .rank-badge{width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:10px;font-size:16px;font-weight:800;background:var(--bg3);border:1px solid var(--border);flex-shrink:0;font-family:'JetBrains Mono',monospace}
 .rank-badge.gold{background:rgba(245,200,66,.12);border-color:rgba(245,200,66,.3);color:var(--gold)}
 .rank-badge.silver{background:rgba(176,190,197,.1);border-color:rgba(176,190,197,.25);color:var(--silver)}
 .rank-badge.bronze{background:rgba(205,127,50,.1);border-color:rgba(205,127,50,.25);color:var(--bronze)}
 .player-info{min-width:0}
 .player-name{font-size:15px;font-weight:700;letter-spacing:-0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.player-meta{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap}
-.meta-pill{font-size:11px;color:var(--subtle);background:var(--bg3);padding:2px 7px;border-radius:20px;border:1px solid var(--border);font-family:'JetBrains Mono',monospace;white-space:nowrap}
-.meta-pill.win{color:var(--green);border-color:rgba(34,211,160,.2);background:rgba(34,211,160,.06)}
-.meta-pill.loss{color:var(--red);border-color:rgba(248,113,113,.2);background:rgba(248,113,113,.06)}
-.meta-pill.streak-pos{color:var(--green)}
-.meta-pill.streak-neg{color:var(--red)}
+.player-meta{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap}
+.pill{font-size:11px;color:var(--subtle);background:var(--bg3);padding:2px 7px;border-radius:20px;border:1px solid var(--border);font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.pill.w{color:var(--green);border-color:rgba(34,211,160,.2);background:rgba(34,211,160,.06)}
+.pill.l{color:var(--red);border-color:rgba(248,113,113,.2);background:rgba(248,113,113,.06)}
+.pill.sp{color:var(--green)}.pill.sn{color:var(--red)}
 .player-stats{text-align:right;flex-shrink:0}
-.win-pct{font-size:18px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--text)}
-.win-pct-label{font-size:10px;color:var(--subtle);text-transform:uppercase;letter-spacing:.06em;margin-top:1px}
-.rank-delta{font-size:11px;font-weight:700;margin-top:2px}
-.delta-up{color:var(--green)}
-.delta-down{color:var(--red)}
-
-/* ── SECTION LABEL ── */
+.win-pct{font-size:18px;font-weight:800;font-family:'JetBrains Mono',monospace}
+.win-pct-lbl{font-size:10px;color:var(--subtle);text-transform:uppercase;letter-spacing:.06em;margin-top:1px}
 .section-label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--subtle);font-weight:600;margin-bottom:10px;margin-top:20px}
+.stat-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.stat-box{text-align:center;padding:12px 8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r2)}
+.stat-num{font-size:22px;font-weight:800;font-family:'JetBrains Mono',monospace}
+.stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--subtle);margin-top:2px}
 
-/* ── ADD MATCH ── */
-.match-form{display:flex;flex-direction:column;gap:14px}
-.form-group{display:flex;flex-direction:column;gap:6px}
-.form-label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--subtle);font-weight:600}
-select,input[type=text]{width:100%;padding:12px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);color:var(--text);font-family:'Syne',sans-serif;font-size:14px;font-weight:600;outline:none;transition:border-color .15s;cursor:pointer}
-select:focus,input:focus{border-color:var(--accent)}
-select option{background:#18181f;color:#f0f0f4}
-.scoreboard{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.score-card{padding:16px;text-align:center;border-radius:var(--r);border:1px solid var(--border);background:var(--surface);transition:border-color .2s,background .2s}
+/* SCOREBOARD */
+.scoreboard{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.score-card{padding:16px;text-align:center;border-radius:var(--r);border:1px solid var(--border);background:var(--surface);transition:border-color .2s,background .2s,opacity .2s}
 .score-card.winner{border-color:rgba(34,211,160,.35);background:rgba(34,211,160,.06)}
-.score-card.loser{opacity:.6}
-.score-role{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--subtle);font-weight:600;margin-bottom:6px}
-.score-name{font-size:14px;font-weight:700;margin-bottom:12px;min-height:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.score-num{font-size:48px;font-weight:800;font-family:'JetBrains Mono',monospace;line-height:1;margin:8px 0}
-.score-controls{display:flex;gap:8px;justify-content:center;margin-top:8px}
-.score-btn{width:40px;height:40px;border-radius:10px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;font-family:'Syne',sans-serif}
+.score-card.loser{opacity:.45}
+.score-role{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--subtle);font-weight:600;margin-bottom:4px}
+.score-name{font-size:13px;font-weight:700;margin-bottom:6px;min-height:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.score-num{font-size:48px;font-weight:800;font-family:'JetBrains Mono',monospace;line-height:1;margin:4px 0}
+.score-controls{display:flex;gap:8px;justify-content:center;margin-top:10px}
+.score-btn{width:42px;height:42px;border-radius:10px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;font-family:'Syne',sans-serif}
 .score-btn:hover{background:var(--border2);transform:scale(1.07)}
 .score-btn:active{transform:scale(.95)}
 .score-btn:disabled{opacity:.3;cursor:not-allowed;transform:none}
-.winner-badge{font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.08em;margin-top:4px;opacity:0;transition:opacity .2s}
-.winner-badge.show{opacity:1}
-.match-summary{padding:14px;border-radius:var(--r2);background:rgba(124,106,240,.08);border:1px solid rgba(124,106,240,.2);font-size:14px;line-height:1.5}
-.match-summary strong{color:var(--text)}
+.winner-lbl{font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.08em;margin-top:6px;min-height:18px}
+.m-summary{padding:14px;border-radius:var(--r2);background:rgba(124,106,240,.08);border:1px solid rgba(124,106,240,.2);font-size:14px;line-height:1.5;margin-bottom:14px}
+.m-summary strong{color:var(--text)}
+.ch-hint{font-size:12px;padding:8px 12px;border-radius:8px;margin-bottom:14px}
+.hint-ok{background:rgba(34,211,160,.08);border:1px solid rgba(34,211,160,.2);color:var(--green)}
+.hint-err{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:var(--red)}
 
-/* ── BUTTONS ── */
+/* BUTTONS */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;border-radius:var(--r2);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap}
 .btn:hover{border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.1)}
 .btn:active{transform:scale(.97)}
 .btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
 .btn-primary{background:var(--accent);border-color:rgba(124,106,240,.5);color:#fff}
-.btn-primary:hover{background:#9180f5;border-color:rgba(124,106,240,.7)}
+.btn-primary:hover{background:#9180f5}
 .btn-danger{background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.3);color:var(--red)}
-.btn-danger:hover{background:rgba(248,113,113,.2)}
 .btn-sm{padding:7px 12px;font-size:12px;border-radius:8px}
-.btn-full{width:100%}
 
-/* ── MATCHES LIST ── */
+/* MATCHES */
 #matches-list{display:flex;flex-direction:column;gap:8px}
 .match-item{padding:14px 16px;border-radius:var(--r);border:1px solid var(--border);background:var(--surface);display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start}
 .match-players{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;flex-wrap:wrap}
-.match-vs{color:var(--subtle);font-size:11px;font-weight:600}
-.match-winner-name{color:var(--green)}
-.match-loser-name{color:var(--muted)}
-.match-meta{font-size:11px;color:var(--subtle);margin-top:4px;display:flex;gap:8px;flex-wrap:wrap}
-.match-badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;font-family:'JetBrains Mono',monospace}
-.match-badge.swap{background:rgba(34,211,160,.1);color:var(--green);border:1px solid rgba(34,211,160,.2)}
-.match-badge.push{background:rgba(251,146,60,.1);color:var(--orange);border:1px solid rgba(251,146,60,.2)}
-.match-badge.none{background:var(--bg3);color:var(--subtle);border:1px solid var(--border)}
-.match-badge.challenge-up{background:rgba(124,106,240,.1);color:var(--accent2);border:1px solid rgba(124,106,240,.2)}
-.match-badge.invalid{background:rgba(248,113,113,.08);color:var(--red);border:1px solid rgba(248,113,113,.2)}
-.match-score{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--text);white-space:nowrap}
-.match-date{font-size:11px;color:var(--subtle);font-family:'JetBrains Mono',monospace;margin-top:2px;text-align:right}
-.delete-match-btn{opacity:0;transition:opacity .15s;cursor:pointer;color:var(--red);font-size:16px;padding:2px 4px;background:none;border:none;font-family:monospace}
-.match-item:hover .delete-match-btn{opacity:.6}
-.delete-match-btn:hover{opacity:1!important}
+.m-vs{color:var(--subtle);font-size:11px}
+.m-win{color:var(--green)}.m-lose{color:var(--muted)}
+.match-meta{font-size:11px;color:var(--subtle);margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.mbadge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;font-family:'JetBrains Mono',monospace}
+.mbadge.swap{background:rgba(34,211,160,.1);color:var(--green);border:1px solid rgba(34,211,160,.2)}
+.mbadge.push{background:rgba(251,146,60,.1);color:var(--orange);border:1px solid rgba(251,146,60,.2)}
+.mbadge.none{background:var(--bg3);color:var(--subtle);border:1px solid var(--border)}
+.mbadge.up{background:rgba(124,106,240,.1);color:var(--accent2);border:1px solid rgba(124,106,240,.2)}
+.mbadge.bad{background:rgba(248,113,113,.08);color:var(--red);border:1px solid rgba(248,113,113,.2)}
+.match-score{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;white-space:nowrap}
+.match-date{font-size:11px;color:var(--subtle);font-family:'JetBrains Mono',monospace;margin-top:2px}
+.del-btn{opacity:0;transition:opacity .15s;cursor:pointer;color:var(--red);font-size:14px;padding:3px 6px;background:none;border:none;display:block;margin-top:4px;font-family:monospace}
+.match-item:hover .del-btn{opacity:.7}.del-btn:hover{opacity:1!important}
 
-/* ── AWARDS ── */
+/* AWARDS */
 #awards-list{display:flex;flex-direction:column;gap:12px}
 .award-card{display:flex;align-items:center;gap:16px;padding:16px;border-radius:var(--r);border:1px solid var(--border);background:var(--surface)}
-.award-icon{font-size:32px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:var(--bg3);border:1px solid var(--border);flex-shrink:0}
-.award-body{min-width:0}
-.award-title{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--subtle);font-weight:600;margin-bottom:2px}
-.award-name{font-size:17px;font-weight:800;letter-spacing:-0.01em}
+.award-icon{font-size:28px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:var(--bg3);border:1px solid var(--border);flex-shrink:0}
+.award-title{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--subtle);font-weight:600;margin-bottom:2px}
+.award-name{font-size:17px;font-weight:800}
 .award-detail{font-size:12px;color:var(--muted);margin-top:2px}
-.award-card.gold-award{border-color:rgba(245,200,66,.3);background:linear-gradient(90deg,rgba(245,200,66,.06),var(--surface))}
+.award-card.ga{border-color:rgba(245,200,66,.3);background:linear-gradient(90deg,rgba(245,200,66,.06),var(--surface))}
 
-/* ── RULES ── */
+/* RULES */
 .rule-section{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:8px}
-.rule-header{padding:14px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;background:var(--surface);transition:background .15s}
-.rule-header:hover{background:var(--surface2)}
-.rule-header h3{font-size:14px;font-weight:700}
-.rule-chevron{color:var(--subtle);font-size:16px;transition:transform .2s;display:inline-block}
-.rule-section.open .rule-chevron{transform:rotate(180deg)}
-.rule-body{display:none;padding:16px;border-top:1px solid var(--border);background:var(--bg2);line-height:1.7;font-size:14px;color:var(--muted)}
+.rule-hdr{padding:14px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;background:var(--surface);transition:background .15s}
+.rule-hdr:hover{background:var(--surface2)}
+.rule-hdr h3{font-size:14px;font-weight:700}
+.rule-chev{color:var(--subtle);transition:transform .2s;display:inline-block}
+.rule-section.open .rule-chev{transform:rotate(180deg)}
+.rule-body{display:none;padding:16px;border-top:1px solid var(--border);background:var(--bg2);line-height:1.7;font-size:14px}
 .rule-section.open .rule-body{display:block}
-.rule-body p{margin-bottom:10px;color:var(--muted)}
-.rule-body p:last-child{margin-bottom:0}
-.rule-body ul{padding-left:18px}
-.rule-body ul li{margin-bottom:6px;color:var(--muted)}
+.rule-body p{margin-bottom:10px;color:var(--muted)}.rule-body p:last-child{margin-bottom:0}
+.rule-body ul{padding-left:18px}.rule-body li{margin-bottom:6px;color:var(--muted)}
 .rule-body strong{color:var(--text);font-weight:700}
-.rule-example{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:12px;margin-top:10px;font-size:13px}
+.rule-eg{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:12px;margin-top:10px;font-size:13px;color:var(--muted)}
 
-/* ── ADMIN ── */
-.admin-section{margin-bottom:20px}
-.pin-form{display:flex;gap:8px;align-items:flex-end}
-.pin-form input{flex:1}
-.players-manager{display:flex;flex-direction:column;gap:8px}
-.player-admin-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--r2);background:var(--bg3);border:1px solid var(--border)}
-.player-admin-rank{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--subtle);width:28px;text-align:center;flex-shrink:0}
-.player-admin-name{flex:1;font-size:14px;font-weight:600}
-.player-admin-actions{display:flex;gap:6px;flex-shrink:0}
-.add-player-row{display:flex;gap:8px}
-.add-player-row input{flex:1}
+/* ADMIN */
+.prow{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--r2);background:var(--bg3);border:1px solid var(--border);margin-bottom:8px}
+.prow-rank{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--subtle);width:28px;text-align:center;flex-shrink:0}
+.prow-name{flex:1;font-size:14px;font-weight:600}
+.prow-actions{display:flex;gap:6px;flex-shrink:0}
+.add-row{display:flex;gap:8px;margin-top:12px}
+.add-row input{flex:1}
 
-/* ── STATS MINI BAR ── */
-.stat-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
-.stat-box{text-align:center;padding:12px 8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r2)}
-.stat-num{font-size:22px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--text)}
-.stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--subtle);margin-top:2px}
-
-/* ── TOAST ── */
+/* TOAST */
 #toast-host{position:fixed;right:14px;bottom:calc(var(--nav)+16px);display:flex;flex-direction:column;gap:8px;z-index:9999;pointer-events:none}
-.toast{padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(18,18,26,.9);backdrop-filter:blur(12px);color:var(--text);font-size:13px;font-weight:600;max-width:300px;pointer-events:auto;cursor:pointer;transition:opacity .2s,transform .2s;animation:toastIn .2s ease}
-@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.toast.success{border-color:rgba(34,211,160,.35)}
-.toast.error{border-color:rgba(248,113,113,.4)}
-.toast.warn{border-color:rgba(251,146,60,.4)}
+.toast{padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(18,18,26,.92);backdrop-filter:blur(12px);color:var(--text);font-size:13px;font-weight:600;max-width:300px;pointer-events:auto;cursor:pointer;animation:tIn .2s ease}
+@keyframes tIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.toast.success{border-color:rgba(34,211,160,.4)}.toast.error{border-color:rgba(248,113,113,.4)}.toast.warn{border-color:rgba(251,146,60,.4)}
 
-/* ── BOTTOM NAV ── */
-.bottom-nav{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);width:min(600px,calc(100% - 20px));height:var(--nav);background:rgba(12,12,18,.85);border:1px solid var(--border2);border-radius:18px;backdrop-filter:blur(16px);display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:8px;z-index:1000}
+/* NAV */
+.bottom-nav{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);width:min(600px,calc(100% - 20px));height:var(--nav);background:rgba(12,12,18,.88);border:1px solid var(--border2);border-radius:18px;backdrop-filter:blur(16px);display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:8px;z-index:1000}
 .nav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:12px;color:var(--subtle);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;transition:all .15s;padding:4px 2px;border:1px solid transparent;user-select:none}
 .nav-item:hover{color:var(--muted);background:var(--surface)}
 .nav-item.active{color:var(--text);background:rgba(124,106,240,.18);border-color:rgba(124,106,240,.3)}
-.nav-item .nav-icon{font-size:18px;line-height:1}
+.nav-icon{font-size:18px;line-height:1}
 
-/* ── EMPTY STATE ── */
-.empty-state{text-align:center;padding:40px 20px;color:var(--subtle)}
-.empty-state .empty-icon{font-size:40px;margin-bottom:12px;opacity:.5}
-.empty-state p{font-size:14px;color:var(--subtle)}
+/* MODAL */
+.moverlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px}
+.mbox{background:var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:24px;max-width:360px;width:100%}
+.mbox h3{margin-bottom:8px}.mbox p{font-size:14px;margin-bottom:20px}
+.mactions{display:flex;gap:10px}.mactions .btn{flex:1}
 
-/* ── CONFIRM MODAL ── */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px}
-.modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:24px;max-width:360px;width:100%}
-.modal-box h3{margin-bottom:8px}
-.modal-box p{font-size:14px;margin-bottom:20px}
-.modal-actions{display:flex;gap:10px}
-.modal-actions .btn{flex:1}
+/* SEARCH */
+.search-wrap{position:relative;margin-bottom:16px}
+.search-wrap input{padding-left:36px}
+.search-wrap::before{content:'🔍';position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none}
 
-/* ── CHALLENGE HINT ── */
-.challenge-hint{font-size:12px;padding:8px 12px;border-radius:8px;margin-top:-6px}
-.hint-ok{background:rgba(34,211,160,.08);border:1px solid rgba(34,211,160,.2);color:var(--green)}
-.hint-warn{background:rgba(251,146,60,.08);border:1px solid rgba(251,146,60,.2);color:var(--orange)}
-.hint-err{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:var(--red)}
+/* EMPTY */
+.empty{text-align:center;padding:40px 20px}
+.empty .ei{font-size:40px;margin-bottom:12px;opacity:.5}
+.empty p{font-size:14px;color:var(--subtle)}
 
-/* ── SEARCH ── */
-.search-bar{position:relative;margin-bottom:16px}
-.search-bar input{padding-left:36px}
-.search-bar::before{content:'🔍';position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none}
-
-/* ── RESPONSIVE ── */
-@media(max-width:480px){
-  .scoreboard{grid-template-columns:1fr}
-  .stat-bar{grid-template-columns:repeat(3,1fr)}
-  .player-card{grid-template-columns:38px 1fr auto;gap:8px}
-  .score-num{font-size:36px}
-}
+@media(max-width:480px){.scoreboard{grid-template-columns:1fr}.player-card{grid-template-columns:38px 1fr auto;gap:8px}.score-num{font-size:36px}}
 </style>
 </head>
 <body>
 
-<div id="app">
-  <!-- Pages injected here -->
+<!-- ═══ SETUP ═══ -->
+<div id="setup-screen" style="display:none">
+  <div class="setup-box">
+    <h1>🏓 TT Ladder Setup</h1>
+    <div class="setup-sub">One-time GitHub connection</div>
+
+    <div class="setup-step">
+      <div class="step-title"><span class="step-num">1</span>Create <code style="font-size:13px;background:var(--bg3);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace">data.json</code> in your repo</div>
+      <div class="step-body">
+        In your GitHub repo root, create a file called <strong>data.json</strong> with exactly this content:
+        <pre class="code-block">{"leagueName":"Complex Solutions","players":[],"matches":[],"nextMatchId":1}</pre>
+      </div>
+    </div>
+
+    <div class="setup-step">
+      <div class="step-title"><span class="step-num">2</span>Create a Fine-grained Personal Access Token</div>
+      <div class="step-body">
+        Go to <a href="https://github.com/settings/personal-access-tokens/new" target="_blank">GitHub → Settings → Developer Settings → Personal Access Tokens → Fine-grained tokens</a>.<br><br>
+        Set <strong>Repository access</strong> to your ladder repo only.<br>
+        Under <strong>Repository permissions</strong>, set <strong>Contents → Read and Write</strong>.<br><br>
+        Copy the generated token — you won't see it again.
+      </div>
+    </div>
+
+    <div class="setup-step">
+      <div class="step-title"><span class="step-num">3</span>Enter your details below</div>
+      <div class="step-body" style="margin-bottom:16px">Each person who logs matches needs to do this setup once on their device. The token is stored in your browser only and never leaves it.</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">GitHub Owner / Org</label>
+      <input type="text" id="cfg-owner" placeholder="e.g. complexsolutions or johndoe" autocomplete="off"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Repository Name</label>
+      <input type="text" id="cfg-repo" placeholder="e.g. tt-ladder" autocomplete="off"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Branch</label>
+      <input type="text" id="cfg-branch" placeholder="main" value="main" autocomplete="off"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Personal Access Token</label>
+      <input type="password" id="cfg-token" placeholder="github_pat_…" autocomplete="off"/>
+      <div class="form-hint">⚠️ Stored in your browser only (localStorage). Never transmitted except to GitHub's API.</div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="doSetup()">Connect →</button>
+    <div id="setup-error" style="margin-top:12px;font-size:13px;color:var(--red);display:none"></div>
+  </div>
 </div>
 
-<nav class="bottom-nav">
-  <div class="nav-item active" data-page="leaderboard" onclick="navigate('leaderboard')">
-    <span class="nav-icon">📊</span><span>Ladder</span>
-  </div>
-  <div class="nav-item" data-page="add-match" onclick="navigate('add-match')">
-    <span class="nav-icon">➕</span><span>Match</span>
-  </div>
-  <div class="nav-item" data-page="matches" onclick="navigate('matches')">
-    <span class="nav-icon">🕑</span><span>History</span>
-  </div>
-  <div class="nav-item" data-page="awards" onclick="navigate('awards')">
-    <span class="nav-icon">🏆</span><span>Awards</span>
-  </div>
-  <div class="nav-item" data-page="rules" onclick="navigate('rules')">
-    <span class="nav-icon">📖</span><span>Rules</span>
-  </div>
+<!-- ═══ LOADING ═══ -->
+<div id="loading-screen" style="display:none">
+  <div class="spinner"></div>
+  <p id="loading-msg">Connecting to GitHub…</p>
+</div>
+
+<div id="sync-bar"></div>
+
+<!-- ═══ APP ═══ -->
+<div id="app" style="display:none"></div>
+
+<nav class="bottom-nav" id="bottom-nav" style="display:none">
+  <div class="nav-item active" data-page="leaderboard" onclick="go('leaderboard')"><span class="nav-icon">📊</span><span>Ladder</span></div>
+  <div class="nav-item" data-page="add-match" onclick="go('add-match')"><span class="nav-icon">➕</span><span>Match</span></div>
+  <div class="nav-item" data-page="matches" onclick="go('matches')"><span class="nav-icon">🕑</span><span>History</span></div>
+  <div class="nav-item" data-page="awards" onclick="go('awards')"><span class="nav-icon">🏆</span><span>Awards</span></div>
+  <div class="nav-item" data-page="rules" onclick="go('rules')"><span class="nav-icon">📖</span><span>Rules</span></div>
 </nav>
 
 <div id="toast-host"></div>
@@ -271,993 +283,451 @@ select option{background:#18181f;color:#f0f0f4}
 <script>
 'use strict';
 
-/* ═══════════════════════════════════════════
-   STATE
-═══════════════════════════════════════════ */
-const STORE_KEY = 'tt_ladder_v2';
-const ADMIN_PIN_KEY = 'tt_admin_pin';
+/* ─── CONFIG ─── */
+const CFG_KEY='tt_gh_cfg_v2', ADMIN_KEY='tt_admin_pin_v2';
+let cfg=null;
+function loadCfg(){try{cfg=JSON.parse(localStorage.getItem(CFG_KEY));}catch(e){}}
+function saveCfg(c){cfg=c;localStorage.setItem(CFG_KEY,JSON.stringify(c));}
+function clearCfg(){cfg=null;localStorage.removeItem(CFG_KEY);}
 
-function defaultState() {
-  return {
-    leagueName: 'Complex Solutions',
-    players: [],
-    matches: [],
-    nextMatchId: 1,
-  };
+/* ─── GITHUB API ─── */
+const DATA='data.json';
+let _sha=null;
+
+async function ghGet(){
+  const url=`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${DATA}?ref=${cfg.branch}&_=${Date.now()}`;
+  const r=await fetch(url,{headers:{Authorization:`Bearer ${cfg.token}`,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','Cache-Control':'no-cache'}});
+  if(!r.ok){const b=await r.json().catch(()=>({}));throw new Error(b.message||`GitHub ${r.status}`);}
+  const m=await r.json();
+  _sha=m.sha;
+  return JSON.parse(atob(m.content.replace(/\n/g,'')));
 }
 
-let state = defaultState();
-let currentPage = 'leaderboard';
-let adminUnlocked = false;
-
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      state = { ...defaultState(), ...parsed };
-    }
-  } catch(e) {}
-}
-
-function saveState() {
-  try {
-    localStorage.setItem(STORE_KEY, JSON.stringify(state));
-  } catch(e) {}
-}
-
-function getAdminPin() {
-  return localStorage.getItem(ADMIN_PIN_KEY) || '';
-}
-function setAdminPin(pin) {
-  if (pin) localStorage.setItem(ADMIN_PIN_KEY, pin);
-  else localStorage.removeItem(ADMIN_PIN_KEY);
-}
-
-/* ═══════════════════════════════════════════
-   LADDER LOGIC
-═══════════════════════════════════════════ */
-function getRankedPlayers() {
-  return [...state.players].sort((a,b) => a.rank - b.rank);
-}
-
-function getPlayerByName(name) {
-  return state.players.find(p => p.name === name);
-}
-
-function computeAllowed(challengerRank, defenderRank) {
-  const upDist = challengerRank - defenderRank;
-  const downDist = defenderRank - challengerRank;
-  const upwardAllowed = upDist >= 1 && upDist <= 2;
-  const downwardAllowed = downDist === 1;
-  return {
-    allowed: upwardAllowed || downwardAllowed,
-    direction: upwardAllowed ? 'up' : (downwardAllowed ? 'down' : 'none'),
-    distance: upwardAllowed ? upDist : (downwardAllowed ? -downDist : 0)
-  };
-}
-
-function applyMatchToLadder(challengerName, defenderName, winner) {
-  const cPlayer = getPlayerByName(challengerName);
-  const dPlayer = getPlayerByName(defenderName);
-  if (!cPlayer || !dPlayer) return 'none';
-
-  const cRank = cPlayer.rank;
-  const dRank = dPlayer.rank;
-  const rule = computeAllowed(cRank, dRank);
-
-  let movement = 'none';
-
-  if (rule.allowed) {
-    if (rule.direction === 'up' && winner === challengerName) {
-      movement = 'swap';
-      swapRanks(challengerName, defenderName);
-    } else if (rule.direction === 'down') {
-      if (winner === challengerName) {
-        movement = 'push';
-        pushDown(defenderName);
-      } else if (winner === defenderName) {
-        movement = 'swap';
-        swapRanks(challengerName, defenderName);
-      }
-    }
-  }
-
-  return movement;
-}
-
-function swapRanks(nameA, nameB) {
-  const a = getPlayerByName(nameA);
-  const b = getPlayerByName(nameB);
-  if (!a || !b) return;
-  const tmp = a.rank;
-  a.rank = b.rank;
-  b.rank = tmp;
-}
-
-function pushDown(defenderName) {
-  const defender = getPlayerByName(defenderName);
-  if (!defender) return;
-  const belowRank = defender.rank + 1;
-  const below = state.players.find(p => p.rank === belowRank);
-  if (below) {
-    below.rank = defender.rank;
-  }
-  defender.rank = belowRank;
-}
-
-function recomputeStats() {
-  // Reset all
-  for (const p of state.players) {
-    p.wins = 0;
-    p.losses = 0;
-    p.streak = 0;
-    p.lastPlayed = null;
-    p.matchCount = 0;
-  }
-  const sorted = [...state.matches].sort((a,b) => new Date(a.date) - new Date(b.date));
-  for (const m of sorted) {
-    const c = getPlayerByName(m.challenger);
-    const d = getPlayerByName(m.defender);
-    if (!c || !d) continue;
-    const cWon = m.winner === m.challenger;
-    // challenger
-    if (cWon) { c.wins++; c.streak = c.streak > 0 ? c.streak+1 : 1; }
-    else { c.losses++; c.streak = c.streak < 0 ? c.streak-1 : -1; }
-    c.matchCount = (c.matchCount||0)+1;
-    c.lastPlayed = m.date;
-    // defender
-    if (!cWon) { d.wins++; d.streak = d.streak > 0 ? d.streak+1 : 1; }
-    else { d.losses++; d.streak = d.streak < 0 ? d.streak-1 : -1; }
-    d.matchCount = (d.matchCount||0)+1;
-    d.lastPlayed = m.date;
-  }
-}
-
-function winPct(p) {
-  const total = (p.wins||0)+(p.losses||0);
-  if (!total) return '—';
-  return Math.round((p.wins/total)*100)+'%';
-}
-
-function submitMatch(challenger, defender, cScore, dScore) {
-  if (!challenger || !defender || challenger === defender) {
-    toast('Select two different players.', 'error'); return false;
-  }
-  const cP = getPlayerByName(challenger);
-  const dP = getPlayerByName(defender);
-  if (!cP || !dP) { toast('Player not found.', 'error'); return false; }
-
-  const winner = cScore >= 2 ? challenger : defender;
-  const score = `${cScore}-${dScore}`;
-  const rule = computeAllowed(cP.rank, dP.rank);
-  const date = new Date().toISOString();
-
-  const movement = applyMatchToLadder(challenger, defender, winner);
-
-  const match = {
-    id: state.nextMatchId++,
-    date,
-    challenger,
-    defender,
-    winner,
-    score,
-    allowed: rule.allowed,
-    direction: rule.direction,
-    movement,
-    distance: rule.distance
-  };
-
-  state.matches.unshift(match);
-  recomputeStats();
-  saveState();
-  return match;
-}
-
-/* ═══════════════════════════════════════════
-   PLAYER MANAGEMENT
-═══════════════════════════════════════════ */
-function addPlayer(name) {
-  const clean = name.trim();
-  if (!clean) { toast('Enter a name.', 'error'); return false; }
-  if (state.players.find(p => p.name.toLowerCase() === clean.toLowerCase())) {
-    toast('Player already exists.', 'error'); return false;
-  }
-  const maxRank = state.players.reduce((m,p) => Math.max(m, p.rank), 0);
-  state.players.push({
-    name: clean,
-    rank: maxRank + 1,
-    wins: 0, losses: 0, streak: 0, matchCount: 0, lastPlayed: null
+async function ghPut(data,msg){
+  const content=btoa(unescape(encodeURIComponent(JSON.stringify(data,null,2))));
+  const r=await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${DATA}`,{
+    method:'PUT',
+    headers:{Authorization:`Bearer ${cfg.token}`,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'},
+    body:JSON.stringify({message:msg,content,branch:cfg.branch,sha:_sha})
   });
-  saveState();
-  toast(`${clean} added to ladder.`, 'success');
-  return true;
+  if(!r.ok){const b=await r.json().catch(()=>({}));throw new Error(b.message||`GitHub ${r.status}`);}
+  const result=await r.json();
+  _sha=result.content.sha;
 }
 
-function removePlayer(name) {
-  state.players = state.players.filter(p => p.name !== name);
-  // Remove their matches
-  state.matches = state.matches.filter(m => m.challenger !== name && m.defender !== name);
-  // Re-rank remaining
-  const sorted = [...state.players].sort((a,b) => a.rank - b.rank);
-  sorted.forEach((p,i) => { p.rank = i+1; });
-  recomputeStats();
-  saveState();
+/* ─── STATE ─── */
+let state=null, page='leaderboard', adminOn=false;
+function def(){return{leagueName:'Complex Solutions',players:[],matches:[],nextMatchId:1};}
+
+/* ─── LADDER LOGIC ─── */
+function sorted(){return[...state.players].sort((a,b)=>a.rank-b.rank);}
+function gp(name){return state.players.find(p=>p.name===name);}
+function allowed(cr,dr){const u=cr-dr,d=dr-cr;const uok=u>=1&&u<=2,dok=d===1;return{ok:uok||dok,dir:uok?'up':dok?'down':'none',dist:uok?u:dok?-d:0};}
+function swapR(a,b){const pa=gp(a),pb=gp(b);if(!pa||!pb)return;[pa.rank,pb.rank]=[pb.rank,pa.rank];}
+function pushDown(name){const d=gp(name);if(!d)return;const b=state.players.find(p=>p.rank===d.rank+1);if(b)b.rank=d.rank;d.rank++;}
+function applyMove(cn,dn,winner){
+  const c=gp(cn),d=gp(dn);if(!c||!d)return'none';
+  const rule=allowed(c.rank,d.rank);if(!rule.ok)return'none';
+  if(rule.dir==='up'&&winner===cn){swapR(cn,dn);return'swap';}
+  if(rule.dir==='down'){if(winner===cn){pushDown(dn);return'push';}if(winner===dn){swapR(cn,dn);return'swap';}}
+  return'none';
 }
-
-function movePlayerUp(name) {
-  const p = getPlayerByName(name);
-  if (!p || p.rank <= 1) return;
-  const above = state.players.find(q => q.rank === p.rank-1);
-  if (above) { above.rank = p.rank; p.rank--; }
-  saveState();
-}
-
-function movePlayerDown(name) {
-  const p = getPlayerByName(name);
-  const maxR = state.players.reduce((m,q) => Math.max(m, q.rank), 0);
-  if (!p || p.rank >= maxR) return;
-  const below = state.players.find(q => q.rank === p.rank+1);
-  if (below) { below.rank = p.rank; p.rank++; }
-  saveState();
-}
-
-function deleteMatch(id) {
-  state.matches = state.matches.filter(m => m.id !== id);
-  // Full replay of ladder from scratch is complex; just recompute stats
-  recomputeStats();
-  saveState();
-}
-
-/* ═══════════════════════════════════════════
-   AWARDS
-═══════════════════════════════════════════ */
-function computeAwards() {
-  const ps = state.players;
-  const ms = state.matches;
-  if (!ps.length) return [];
-  const awards = [];
-
-  // Ladder champion
-  const champ = getRankedPlayers()[0];
-  if (champ) awards.push({ icon:'🥇', title:'Ladder Champion', name: champ.name, detail:`Rank #1 with ${champ.wins}W / ${champ.losses}L`, gold:true });
-
-  // Most wins
-  const mostWins = [...ps].sort((a,b) => b.wins - a.wins)[0];
-  if (mostWins && mostWins.wins > 0) awards.push({ icon:'🎯', title:'Top Scorer', name: mostWins.name, detail:`${mostWins.wins} wins total` });
-
-  // Best streak
-  const bestStreak = [...ps].sort((a,b) => b.streak - a.streak)[0];
-  if (bestStreak && bestStreak.streak > 0) awards.push({ icon:'🔥', title:'On Fire', name: bestStreak.name, detail:`${bestStreak.streak} win streak` });
-
-  // Most active
-  const mostActive = [...ps].sort((a,b) => (b.matchCount||0) - (a.matchCount||0))[0];
-  if (mostActive && (mostActive.matchCount||0) > 0) awards.push({ icon:'⚡', title:'Most Active', name: mostActive.name, detail:`${mostActive.matchCount} matches played` });
-
-  // Giant Killer: most wins against higher-ranked players (at time of match — approx: challenger wins against defender who was ranked higher = lower rank number)
-  const giantKills = {};
-  for (const m of ms) {
-    if (!m.allowed || m.direction !== 'up' || m.winner !== m.challenger) continue;
-    giantKills[m.winner] = (giantKills[m.winner]||0) + 1;
+function recalc(){
+  for(const p of state.players){p.wins=0;p.losses=0;p.streak=0;p.matchCount=0;p.lastPlayed=null;}
+  const ms=[...state.matches].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  for(const m of ms){
+    const c=gp(m.challenger),d=gp(m.defender);if(!c||!d)continue;
+    const cw=m.winner===m.challenger;
+    if(cw){c.wins++;c.streak=c.streak>0?c.streak+1:1;}else{c.losses++;c.streak=c.streak<0?c.streak-1:-1;}
+    if(!cw){d.wins++;d.streak=d.streak>0?d.streak+1:1;}else{d.losses++;d.streak=d.streak<0?d.streak-1:-1;}
+    c.matchCount=(c.matchCount||0)+1;c.lastPlayed=m.date;
+    d.matchCount=(d.matchCount||0)+1;d.lastPlayed=m.date;
   }
-  const topGiant = Object.entries(giantKills).sort((a,b) => b[1]-a[1])[0];
-  if (topGiant) awards.push({ icon:'🗡️', title:'Giant Killer', name: topGiant[0], detail:`${topGiant[1]} upsets against higher-ranked` });
+}
+function wpct(p){const t=(p.wins||0)+(p.losses||0);return t?Math.round(p.wins/t*100)+'%':'—';}
 
-  // Best Win%
-  const withGames = ps.filter(p => (p.wins+p.losses) >= 3);
-  if (withGames.length) {
-    const bestPct = withGames.sort((a,b) => (b.wins/(b.wins+b.losses)) - (a.wins/(a.wins+a.losses)))[0];
-    awards.push({ icon:'📈', title:'Best Win Rate', name: bestPct.name, detail:`${winPct(bestPct)} (min 3 games)` });
+/* ─── SAVE ─── */
+async function save(msg){
+  setSyncBar(true);
+  try{await ghPut(state,msg||'Update ladder');toast('Saved ✓','success',2000);}
+  catch(e){toast('Save failed: '+e.message,'error',6000);setSyncBar(false);throw e;}
+  setSyncBar(false);
+}
+function setSyncBar(on){document.getElementById('sync-bar').classList.toggle('show',on);}
+
+/* ─── SETUP ─── */
+async function doSetup(){
+  const owner=document.getElementById('cfg-owner').value.trim();
+  const repo=document.getElementById('cfg-repo').value.trim();
+  const branch=document.getElementById('cfg-branch').value.trim()||'main';
+  const token=document.getElementById('cfg-token').value.trim();
+  const errEl=document.getElementById('setup-error');
+  errEl.style.display='none';
+  if(!owner||!repo||!token){errEl.textContent='Please fill in all fields.';errEl.style.display='block';return;}
+  saveCfg({owner,repo,branch,token});
+  await boot();
+}
+
+/* ─── BOOT ─── */
+async function boot(){
+  document.getElementById('setup-screen').style.display='none';
+  document.getElementById('loading-screen').style.display='flex';
+  try{
+    state=await ghGet();
+    if(!state.players)state.players=[];
+    if(!state.matches)state.matches=[];
+    if(!state.nextMatchId)state.nextMatchId=state.matches.reduce((m,x)=>Math.max(m,x.id||0),0)+1;
+    if(!state.leagueName)state.leagueName='Complex Solutions';
+    recalc();
+    document.getElementById('loading-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    document.getElementById('bottom-nav').style.display='grid';
+    render();
+    toast('Connected ✓','success',2000);
+  }catch(e){
+    document.getElementById('loading-screen').style.display='none';
+    document.getElementById('setup-screen').style.display='flex';
+    const errEl=document.getElementById('setup-error');
+    errEl.textContent='Connection failed: '+e.message+'. Check your token, owner and repo name.';
+    errEl.style.display='block';
   }
+}
 
+/* ─── NAV ─── */
+function go(p){
+  page=p;
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.page===p));
+  render();
+}
+function render(){
+  const app=document.getElementById('app');
+  const map={leaderboard:[rLB,iLB],'add-match':[rAM,iAM],matches:[rMH,iMH],awards:[rAW,null],rules:[rRU,iRU]};
+  const [rfn,ifn]=map[page]||[rLB,iLB];
+  app.innerHTML=rfn();
+  if(ifn)ifn();
+}
+
+/* ─── LEADERBOARD ─── */
+function rLB(){
+  const ps=sorted();
+  return`<div class="page-header"><h1>🏓 ${x(state.leagueName)}</h1><div class="sub">Table Tennis Ladder</div></div>
+  <div class="container">
+    <div class="stat-bar">
+      <div class="stat-box"><div class="stat-num">${ps.length}</div><div class="stat-lbl">Players</div></div>
+      <div class="stat-box"><div class="stat-num">${state.matches.length}</div><div class="stat-lbl">Matches</div></div>
+      <div class="stat-box"><div class="stat-num">${ps.length?wpct(ps[0]):'—'}</div><div class="stat-lbl">#1 Win%</div></div>
+    </div>
+    <div class="section-label">Current Rankings</div>
+    <div id="lb-view" style="display:flex;flex-direction:column;gap:8px">
+    ${ps.length===0?`<div class="empty"><div class="ei">🏓</div><p>No players yet. Unlock Admin below to get started.</p></div>`:
+      ps.map(p=>{
+        const bc=p.rank===1?'gold':p.rank===2?'silver':p.rank===3?'bronze':'';
+        const rc=p.rank<=3?`r${p.rank}`:'';
+        const sc=p.streak>0?'sp':p.streak<0?'sn':'';
+        const sl=p.streak>0?`🔥${p.streak}`:p.streak<0?`❄️${Math.abs(p.streak)}`:'—';
+        return`<div class="player-card ${rc}">
+          <div class="rank-badge ${bc}">${p.rank}</div>
+          <div class="player-info">
+            <div class="player-name">${x(p.name)}</div>
+            <div class="player-meta">
+              <span class="pill w">${p.wins}W</span>
+              <span class="pill l">${p.losses}L</span>
+              <span class="pill ${sc}">Streak: ${sl}</span>
+              <span class="pill">Last: ${p.lastPlayed?fd(p.lastPlayed):'never'}</span>
+            </div>
+          </div>
+          <div class="player-stats"><div class="win-pct">${wpct(p)}</div><div class="win-pct-lbl">Win%</div></div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+      <button class="btn btn-sm" onclick="doRefresh()">↻ Refresh</button>
+      <button class="btn btn-sm" onclick="doReconfig()">⚙ Reconfigure</button>
+    </div>
+    <div class="section-label" style="margin-top:24px">Admin</div>
+    <div id="admin-area">${rAdminGate()}</div>
+  </div>`;
+}
+function iLB(){
+  const pi=document.getElementById('pin-input');
+  if(pi)pi.addEventListener('keydown',e=>{if(e.key==='Enter')tryUnlock();});
+  const np=document.getElementById('new-player');
+  if(np)np.addEventListener('keydown',e=>{if(e.key==='Enter')aAdd();});
+}
+function rAdminGate(){
+  if(!adminOn){
+    const hasPIN=!!localStorage.getItem(ADMIN_KEY);
+    return`<div class="card"><p style="font-size:13px;margin-bottom:12px">${hasPIN?'Enter your admin PIN to manage players and settings.':'Set an optional PIN to protect admin access.'}</p>
+    <div style="display:flex;gap:8px"><input type="password" id="pin-input" placeholder="${hasPIN?'Enter PIN':'Set a PIN (or leave blank)'}" style="flex:1"/><button class="btn btn-primary" onclick="tryUnlock()">Unlock</button></div></div>`;
+  }
+  return rAdminPanel();
+}
+function rAdminPanel(){
+  const ps=sorted();
+  return`<div class="card" style="margin-bottom:12px">
+    <h3 style="margin-bottom:12px">Manage Players</h3>
+    ${ps.map(p=>`<div class="prow">
+      <div class="prow-rank">#${p.rank}</div>
+      <div class="prow-name">${x(p.name)}</div>
+      <div class="prow-actions">
+        <button class="btn btn-sm" onclick="aUp('${xa(p.name)}')">↑</button>
+        <button class="btn btn-sm" onclick="aDn('${xa(p.name)}')">↓</button>
+        <button class="btn btn-sm btn-danger" onclick="aRm('${xa(p.name)}')">✕</button>
+      </div>
+    </div>`).join('')}
+    <div class="add-row"><input type="text" id="new-player" placeholder="New player name" maxlength="40"/><button class="btn btn-primary" onclick="aAdd()">Add</button></div>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <h3 style="margin-bottom:12px">League Settings</h3>
+    <div class="form-group"><label class="form-label">League Name</label><input type="text" id="league-name" value="${xa(state.leagueName)}" maxlength="60"/></div>
+    <button class="btn btn-primary" onclick="aSaveName()">Save Name</button>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <h3 style="margin-bottom:8px">Admin PIN</h3>
+    <div style="display:flex;gap:8px"><input type="password" id="new-pin" placeholder="New PIN (blank = remove)" style="flex:1"/><button class="btn" onclick="aSavePin()">Set PIN</button></div>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <h3 style="margin-bottom:8px">Danger Zone</h3>
+    <p style="font-size:13px;margin-bottom:12px;color:var(--muted)">Cannot be undone.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-danger" onclick="aResetMatches()">Reset All Matches</button>
+      <button class="btn btn-danger" onclick="aResetAll()">Reset Everything</button>
+    </div>
+  </div>
+  <button class="btn" style="width:100%" onclick="lockAdmin()">🔒 Lock Admin</button>`;
+}
+function refreshAdmin(){document.getElementById('admin-area').innerHTML=rAdminPanel();iLB();}
+function tryUnlock(){
+  const v=(document.getElementById('pin-input')?.value||'').trim();
+  const stored=localStorage.getItem(ADMIN_KEY)||'';
+  if(!stored||v===stored){
+    adminOn=true;
+    if(!stored&&v)localStorage.setItem(ADMIN_KEY,v);
+    document.getElementById('admin-area').innerHTML=rAdminPanel();iLB();toast('Admin unlocked.','success');
+  }else{toast('Wrong PIN.','error');const i=document.getElementById('pin-input');if(i)i.value='';}
+}
+function lockAdmin(){adminOn=false;document.getElementById('admin-area').innerHTML=rAdminGate();iLB();}
+async function aUp(name){moveUp(name);try{await save('Reorder: '+name+' up');}catch(e){}refreshAdmin();}
+async function aDn(name){moveDn(name);try{await save('Reorder: '+name+' down');}catch(e){}refreshAdmin();}
+function aRm(name){modal('Remove Player',`Remove <strong>${x(name)}</strong>? Their matches will also be removed.`,async()=>{
+  rmPlayer(name);try{await save('Remove player: '+name);}catch(e){}refreshAdmin();toast(name+' removed.','success');
+});}
+async function aAdd(){
+  const inp=document.getElementById('new-player');if(!inp||!inp.value.trim())return;
+  const n=inp.value.trim();if(addPlayer(n)){inp.value='';try{await save('Add player: '+n);}catch(e){}refreshAdmin();}
+}
+async function aSaveName(){
+  const v=(document.getElementById('league-name')?.value||'').trim();
+  if(!v){toast('Enter a valid name.','error');return;}
+  state.leagueName=v;try{await save('Update league name');}catch(e){}toast('Saved.','success');
+}
+function aSavePin(){const v=(document.getElementById('new-pin')?.value||'').trim();if(v)localStorage.setItem(ADMIN_KEY,v);else localStorage.removeItem(ADMIN_KEY);document.getElementById('new-pin').value='';toast('PIN updated.','success');}
+function aResetMatches(){modal('Reset All Matches','Delete all match history and reset stats? Rankings stay.',async()=>{state.matches=[];state.nextMatchId=1;recalc();try{await save('Reset all matches');}catch(e){}refreshAdmin();toast('Match history cleared.','success');});}
+function aResetAll(){modal('Reset Everything','Delete ALL data — players, matches, settings?',async()=>{state=def();try{await save('Full reset');}catch(e){}adminOn=false;go('leaderboard');toast('All data cleared.','success');});}
+async function doRefresh(){toast('Refreshing…','info',1500);try{state=await ghGet();if(!state.players)state.players=[];if(!state.matches)state.matches=[];if(!state.nextMatchId)state.nextMatchId=1;recalc();render();toast('Up to date ✓','success',2000);}catch(e){toast('Refresh failed: '+e.message,'error',4000);}}
+function doReconfig(){modal('Reconfigure','Clear your GitHub config from this browser? Data stays on GitHub.',()=>{clearCfg();location.reload();},'Reconfigure',false);}
+
+/* ─── PLAYER OPS ─── */
+function addPlayer(n){const c=n.trim();if(!c){toast('Enter a name.','error');return false;}if(state.players.find(p=>p.name.toLowerCase()===c.toLowerCase())){toast('Player already exists.','error');return false;}state.players.push({name:c,rank:state.players.reduce((m,p)=>Math.max(m,p.rank),0)+1,wins:0,losses:0,streak:0,matchCount:0,lastPlayed:null});return true;}
+function rmPlayer(name){state.players=state.players.filter(p=>p.name!==name);state.matches=state.matches.filter(m=>m.challenger!==name&&m.defender!==name);sorted().forEach((p,i)=>{p.rank=i+1;});recalc();}
+function moveUp(name){const p=gp(name);if(!p||p.rank<=1)return;const a=state.players.find(q=>q.rank===p.rank-1);if(a){a.rank=p.rank;p.rank--;}}
+function moveDn(name){const p=gp(name);const mx=state.players.reduce((m,q)=>Math.max(m,q.rank),0);if(!p||p.rank>=mx)return;const b=state.players.find(q=>q.rank===p.rank+1);if(b){b.rank=p.rank;p.rank++;}}
+
+/* ─── ADD MATCH ─── */
+function rAM(){
+  const ps=sorted();
+  if(ps.length<2)return`<div class="page-header"><h1>Add Match</h1><div class="sub">Best of 3 · First to 2</div></div><div class="container"><div class="empty"><div class="ei">👥</div><p>Add at least 2 players in Admin first.</p></div></div>`;
+  const o1=ps.map(p=>`<option value="${xa(p.name)}">${x(p.name)} (#${p.rank})</option>`).join('');
+  const o2=ps.map((p,i)=>`<option value="${xa(p.name)}" ${i===1?'selected':''}>${x(p.name)} (#${p.rank})</option>`).join('');
+  return`<div class="page-header"><h1>Add Match</h1><div class="sub">Best of 3 · First to 2 games</div></div>
+  <div class="container">
+    <div class="form-group"><label class="form-label">Challenger</label><select id="csel">${o1}</select></div>
+    <div class="form-group"><label class="form-label">Defender</label><select id="dsel">${o2}</select></div>
+    <div id="hint"></div>
+    <div class="scoreboard">
+      <div class="score-card" id="cc"><div class="score-role">Challenger</div><div class="score-name" id="cn">—</div><div class="score-num" id="cv">0</div><div class="score-controls"><button class="score-btn" id="cm">−</button><button class="score-btn" id="cp">+</button></div><div class="winner-lbl" id="cw"></div></div>
+      <div class="score-card" id="dc"><div class="score-role">Defender</div><div class="score-name" id="dn">—</div><div class="score-num" id="dv">0</div><div class="score-controls"><button class="score-btn" id="dm">−</button><button class="score-btn" id="dp">+</button></div><div class="winner-lbl" id="dw"></div></div>
+    </div>
+    <div id="ms" class="hide"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button id="cfm" class="btn btn-primary hide" style="flex:1">✓ Confirm & Save to GitHub</button>
+      <button class="btn" onclick="resetSc()" style="flex:1">Reset</button>
+    </div>
+  </div>`;
+}
+function iAM(){
+  const csel=document.getElementById('csel'),dsel=document.getElementById('dsel');
+  if(!csel||!dsel)return;
+  let cs=0,ds=0,done=false;
+  function snum(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
+  function resetSc2(){cs=0;ds=0;done=false;snum('cv',0);snum('dv',0);
+    document.getElementById('cw').textContent='';document.getElementById('dw').textContent='';
+    document.getElementById('cc').className='score-card';document.getElementById('dc').className='score-card';
+    document.getElementById('ms')?.classList.add('hide');document.getElementById('cfm')?.classList.add('hide');
+    ['cp','cm','dp','dm'].forEach(id=>{const e=document.getElementById(id);if(e)e.disabled=false;});
+  }
+  window.resetSc=resetSc2;
+  function updHint(){
+    const h=document.getElementById('hint');if(!h)return;
+    const c=gp(csel.value),d=gp(dsel.value);
+    if(!c||!d||c.name===d.name){h.innerHTML='';return;}
+    const r=allowed(c.rank,d.rank);
+    h.innerHTML=r.ok
+      ?`<div class="ch-hint hint-ok">✓ Valid: ${x(c.name)} ${r.dir==='up'?`challenges up ${r.dist} rank(s)`:'push-down challenge'}</div>`
+      :(()=>{const u=c.rank-d.rank,dv=d.rank-c.rank;const why=u>2?`too far above (${u} ranks, max is 2)`:dv>1?`too far below (${dv} ranks, max is 1 for push-down)`:'same rank';return`<div class="ch-hint hint-err">⚠ Invalid: ${why}. Match will be recorded but won't move the ladder.</div>`})();
+  }
+  function updNames(){const cn=document.getElementById('cn'),dn=document.getElementById('dn');if(cn)cn.textContent=csel.value;if(dn)dn.textContent=dsel.value;updHint();resetSc2();}
+  function checkWin(){
+    const cw=cs>=2,dw=ds>=2;
+    document.getElementById('cw').textContent=cw?'🏆 Winner':'';
+    document.getElementById('dw').textContent=dw?'🏆 Winner':'';
+    if(cw||dw){
+      done=true;['cp','cm','dp','dm'].forEach(id=>{const e=document.getElementById(id);if(e)e.disabled=true;});
+      document.getElementById('cc').className='score-card '+(cw?'winner':'loser');
+      document.getElementById('dc').className='score-card '+(dw?'winner':'loser');
+      const wn=cw?csel.value:dsel.value,c=gp(csel.value),d=gp(dsel.value),r=c&&d?allowed(c.rank,d.rank):null;
+      let mv='';
+      if(r?.ok){if(r.dir==='up'&&cw)mv=`<br>📈 ${x(wn)} moves up to rank #${d.rank}`;else if(r.dir==='down'&&cw)mv=`<br>⬇️ ${x(dsel.value)} gets pushed down one rank`;else if(r.dir==='down'&&dw)mv=`<br>↕️ ${x(wn)} moves up`;}
+      const ms=document.getElementById('ms');if(ms){ms.className='m-summary';ms.innerHTML=`<strong>${x(wn)}</strong> wins ${cs}–${ds}.${mv}`;}
+      document.getElementById('cfm')?.classList.remove('hide');
+    }else{done=false;document.getElementById('cc').className='score-card';document.getElementById('dc').className='score-card';document.getElementById('ms')?.classList.add('hide');document.getElementById('cfm')?.classList.add('hide');}
+  }
+  document.getElementById('cp')?.addEventListener('click',()=>{if(done||cs>=2)return;cs++;snum('cv',cs);checkWin();});
+  document.getElementById('cm')?.addEventListener('click',()=>{if(done)return;cs=Math.max(0,cs-1);snum('cv',cs);checkWin();});
+  document.getElementById('dp')?.addEventListener('click',()=>{if(done||ds>=2)return;ds++;snum('dv',ds);checkWin();});
+  document.getElementById('dm')?.addEventListener('click',()=>{if(done)return;ds=Math.max(0,ds-1);snum('dv',ds);checkWin();});
+  csel.addEventListener('change',()=>{if(csel.value===dsel.value){const o=sorted().find(p=>p.name!==csel.value);if(o)dsel.value=o.name;}updNames();});
+  dsel.addEventListener('change',updNames);
+  document.getElementById('cfm')?.addEventListener('click',async()=>{
+    if(!done)return;
+    const btn=document.getElementById('cfm');btn.disabled=true;btn.textContent='Saving to GitHub…';
+    // Fetch latest SHA before writing to avoid conflicts
+    try{state=await ghGet();if(!state.players)state.players=[];if(!state.matches)state.matches=[];if(!state.nextMatchId)state.nextMatchId=1;}
+    catch(e){toast('Fetch failed before save: '+e.message,'error',5000);btn.disabled=false;btn.textContent='✓ Confirm & Save to GitHub';return;}
+    const cn=csel.value,dn=dsel.value,winner=cs>=2?cn:dn;
+    const c=gp(cn),d=gp(dn);if(!c||!d){toast('Player not found.','error');btn.disabled=false;btn.textContent='✓ Confirm & Save to GitHub';return;}
+    const rule=allowed(c.rank,d.rank);
+    const movement=applyMove(cn,dn,winner);
+    state.matches.unshift({id:state.nextMatchId++,date:new Date().toISOString(),challenger:cn,defender:dn,winner,score:`${cs}-${ds}`,allowed:rule.ok,direction:rule.dir,movement,distance:rule.dist});
+    recalc();
+    try{await save(`Match: ${cn} vs ${dn} (${cs}-${ds})`);setTimeout(()=>go('leaderboard'),500);}
+    catch(e){btn.disabled=false;btn.textContent='✓ Confirm & Save to GitHub';}
+  });
+  updNames();
+}
+
+/* ─── MATCH HISTORY ─── */
+function rMH(){
+  const ms=state.matches;
+  return`<div class="page-header"><h1>Match History</h1><div class="sub">${ms.length} matches recorded</div></div>
+  <div class="container">
+    <div class="search-wrap"><input type="text" id="msrch" placeholder="Search player…"></div>
+    <div id="matches-list">
+    ${ms.length===0?`<div class="empty"><div class="ei">📋</div><p>No matches yet.</p></div>`:
+      ms.map(m=>{
+        const wn=m.winner,ln=m.winner===m.challenger?m.defender:m.challenger;
+        const mvb=m.movement==='swap'?`<span class="mbadge swap">↕ Swap</span>`:m.movement==='push'?`<span class="mbadge push">⬇ Push</span>`:`<span class="mbadge none">No change</span>`;
+        const db=m.allowed?(m.direction==='up'?`<span class="mbadge up">▲ Up</span>`:`<span class="mbadge push">▼ Push-Down</span>`):`<span class="mbadge bad">⚠ Invalid</span>`;
+        return`<div class="match-item" data-id="${m.id}">
+          <div>
+            <div class="match-players"><span class="m-win">${x(wn)}</span><span class="m-vs">def.</span><span class="m-lose">${x(ln)}</span></div>
+            <div class="match-meta">${db}${mvb}<span>${x(m.challenger)} challenged ${x(m.defender)}</span></div>
+          </div>
+          <div style="text-align:right">
+            <div class="match-score">${x(m.score)}</div>
+            <div class="match-date">${fd(m.date)}</div>
+            ${adminOn?`<button class="del-btn" onclick="delMatch(${m.id})">✕</button>`:''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+function iMH(){
+  const s=document.getElementById('msrch');
+  if(s)s.addEventListener('input',()=>{const q=s.value.toLowerCase();document.querySelectorAll('.match-item').forEach(el=>{el.style.display=!q||el.textContent.toLowerCase().includes(q)?'':'none';});});
+}
+function delMatch(id){modal('Delete Match','Delete this match? Stats recalculate; ladder positions won\'t reverse.',async()=>{state.matches=state.matches.filter(m=>m.id!==id);recalc();try{await save('Delete match #'+id);}catch(e){}go('matches');toast('Match deleted.','success');});}
+
+/* ─── AWARDS ─── */
+function rAW(){
+  const awards=calcAwards();
+  return`<div class="page-header"><h1>Awards</h1><div class="sub">Computed from live match data</div></div>
+  <div class="container">
+    <div id="awards-list">
+    ${awards.length===0?`<div class="empty"><div class="ei">🏆</div><p>Play some matches to earn awards.</p></div>`:
+      awards.map(a=>`<div class="award-card ${a.gold?'ga':''}">
+        <div class="award-icon">${a.icon}</div>
+        <div><div class="award-title">${x(a.title)}</div><div class="award-name">${x(a.name)}</div><div class="award-detail">${x(a.detail)}</div></div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+function calcAwards(){
+  const ps=state.players,ms=state.matches;if(!ps.length)return[];
+  const awards=[],r=sorted();
+  if(r[0])awards.push({icon:'🥇',title:'Ladder Champion',name:r[0].name,detail:`Rank #1 · ${r[0].wins}W / ${r[0].losses}L`,gold:true});
+  const mw=[...ps].sort((a,b)=>b.wins-a.wins)[0];if(mw?.wins>0)awards.push({icon:'🎯',title:'Top Scorer',name:mw.name,detail:`${mw.wins} total wins`});
+  const bs=[...ps].sort((a,b)=>b.streak-a.streak)[0];if(bs?.streak>0)awards.push({icon:'🔥',title:'On Fire',name:bs.name,detail:`${bs.streak}-game win streak`});
+  const ma=[...ps].sort((a,b)=>(b.matchCount||0)-(a.matchCount||0))[0];if((ma?.matchCount||0)>0)awards.push({icon:'⚡',title:'Most Active',name:ma.name,detail:`${ma.matchCount} matches played`});
+  const kl={};for(const m of ms){if(m.allowed&&m.direction==='up'&&m.winner===m.challenger)kl[m.winner]=(kl[m.winner]||0)+1;}
+  const tk=Object.entries(kl).sort((a,b)=>b[1]-a[1])[0];if(tk)awards.push({icon:'🗡️',title:'Giant Killer',name:tk[0],detail:`${tk[1]} upsets vs higher-ranked`});
+  const q=ps.filter(p=>(p.wins+p.losses)>=3);if(q.length){const b=[...q].sort((a,b)=>(b.wins/(b.wins+b.losses))-(a.wins/(a.wins+a.losses)))[0];awards.push({icon:'📈',title:'Best Win Rate',name:b.name,detail:`${wpct(b)} (min 3 matches)`});}
   return awards;
 }
 
-/* ═══════════════════════════════════════════
-   TOAST
-═══════════════════════════════════════════ */
-function toast(msg, type='info', dur=3000) {
-  const host = document.getElementById('toast-host');
-  const el = document.createElement('div');
-  el.className = `toast ${type}`;
-  el.textContent = msg;
-  el.onclick = () => el.remove();
-  host.appendChild(el);
-  setTimeout(() => { el.style.opacity='0'; el.style.transform='translateY(6px)'; setTimeout(()=>el.remove(),200); }, dur);
-}
-
-/* ═══════════════════════════════════════════
-   MODAL
-═══════════════════════════════════════════ */
-function showModal(title, msg, onConfirm, confirmText='Delete', danger=true) {
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  overlay.innerHTML = `
-    <div class="modal-box">
-      <h3>${title}</h3>
-      <p>${msg}</p>
-      <div class="modal-actions">
-        <button class="btn" id="modal-cancel">Cancel</button>
-        <button class="btn ${danger ? 'btn-danger' : 'btn-primary'}" id="modal-confirm">${confirmText}</button>
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
-  overlay.querySelector('#modal-cancel').onclick = () => overlay.remove();
-  overlay.querySelector('#modal-confirm').onclick = () => { overlay.remove(); onConfirm(); };
-  overlay.onclick = (e) => { if(e.target===overlay) overlay.remove(); };
-}
-
-/* ═══════════════════════════════════════════
-   NAVIGATION
-═══════════════════════════════════════════ */
-function navigate(page) {
-  currentPage = page;
-  document.querySelectorAll('.nav-item').forEach(el => {
-    el.classList.toggle('active', el.dataset.page === page);
-  });
-  renderPage();
-}
-
-function renderPage() {
-  const app = document.getElementById('app');
-  switch(currentPage) {
-    case 'leaderboard': app.innerHTML = renderLeaderboard(); initLeaderboard(); break;
-    case 'add-match':   app.innerHTML = renderAddMatch();    initAddMatch();    break;
-    case 'matches':     app.innerHTML = renderMatches();     initMatches();     break;
-    case 'awards':      app.innerHTML = renderAwards();                         break;
-    case 'rules':       app.innerHTML = renderRules();       initRules();       break;
-    default:            app.innerHTML = renderLeaderboard(); initLeaderboard(); break;
-  }
-}
-
-/* ═══════════════════════════════════════════
-   LEADERBOARD PAGE
-═══════════════════════════════════════════ */
-function renderLeaderboard() {
-  const players = getRankedPlayers();
-  const totalMatches = state.matches.length;
-  const totalPlayers = players.length;
-
-  return `
-  <div class="page-header">
-    <h1>🏓 ${escHtml(state.leagueName)}</h1>
-    <div class="sub">Table Tennis Ladder</div>
-  </div>
-  <div class="container">
-    <div class="stat-bar">
-      <div class="stat-box"><div class="stat-num">${totalPlayers}</div><div class="stat-lbl">Players</div></div>
-      <div class="stat-box"><div class="stat-num">${totalMatches}</div><div class="stat-lbl">Matches</div></div>
-      <div class="stat-box"><div class="stat-num">${players.length ? winPct(players[0]) : '—'}</div><div class="stat-lbl">#1 Win%</div></div>
-    </div>
-
-    <div class="section-label">Current Rankings</div>
-    <div id="leaderboard-view">
-    ${players.length === 0 ? `<div class="empty-state"><div class="empty-icon">🏓</div><p>No players yet. Go to Admin to add players.</p></div>` :
-      players.map(p => {
-        const rankClass = p.rank === 1 ? 'rank-1' : p.rank === 2 ? 'rank-2' : p.rank === 3 ? 'rank-3' : '';
-        const badgeClass = p.rank === 1 ? 'gold' : p.rank === 2 ? 'silver' : p.rank === 3 ? 'bronze' : '';
-        const total = p.wins + p.losses;
-        const streakClass = p.streak > 0 ? 'streak-pos' : p.streak < 0 ? 'streak-neg' : '';
-        const streakLabel = p.streak > 0 ? `🔥${p.streak}` : p.streak < 0 ? `❄️${Math.abs(p.streak)}` : '—';
-        const lastP = p.lastPlayed ? fmtDate(p.lastPlayed) : 'never';
-        return `<div class="player-card ${rankClass}">
-          <div class="rank-badge ${badgeClass}">${p.rank}</div>
-          <div class="player-info">
-            <div class="player-name">${escHtml(p.name)}</div>
-            <div class="player-meta">
-              <span class="meta-pill win">${p.wins}W</span>
-              <span class="meta-pill loss">${p.losses}L</span>
-              <span class="meta-pill ${streakClass}">Streak: ${streakLabel}</span>
-              <span class="meta-pill">Last: ${lastP}</span>
-            </div>
-          </div>
-          <div class="player-stats">
-            <div class="win-pct">${winPct(p)}</div>
-            <div class="win-pct-label">Win%</div>
-          </div>
-        </div>`;
-      }).join('')
-    }
-    </div>
-
-    <div class="section-label" style="margin-top:28px">Admin</div>
-    <div id="admin-area">${renderAdminArea()}</div>
-  </div>`;
-}
-
-function renderAdminArea() {
-  const pin = getAdminPin();
-  if (!adminUnlocked) {
-    return `<div class="card">
-      <p style="font-size:13px;margin-bottom:12px">Enter the admin PIN to manage players and settings.</p>
-      <div class="pin-form">
-        <input type="password" id="pin-input" placeholder="${pin ? 'Enter PIN' : 'Set a PIN (leave blank for none)'}" />
-        <button class="btn btn-primary" onclick="tryUnlock()">Unlock</button>
-      </div>
-    </div>`;
-  }
-  return renderAdminPanel();
-}
-
-function renderAdminPanel() {
-  const players = getRankedPlayers();
-  return `<div class="admin-section card">
-    <h3 style="margin-bottom:12px">Manage Players</h3>
-    <div class="players-manager" id="players-manager">
-      ${players.map(p => `
-        <div class="player-admin-row">
-          <div class="player-admin-rank">#${p.rank}</div>
-          <div class="player-admin-name">${escHtml(p.name)}</div>
-          <div class="player-admin-actions">
-            <button class="btn btn-sm" onclick="movePlayerUpAdmin('${escAttr(p.name)}')" title="Move up">↑</button>
-            <button class="btn btn-sm" onclick="movePlayerDownAdmin('${escAttr(p.name)}')" title="Move down">↓</button>
-            <button class="btn btn-sm btn-danger" onclick="removePlayerAdmin('${escAttr(p.name)}')" title="Remove">✕</button>
-          </div>
-        </div>`).join('')}
-    </div>
-    <div class="add-player-row" style="margin-top:12px">
-      <input type="text" id="new-player-name" placeholder="New player name" maxlength="40"/>
-      <button class="btn btn-primary" onclick="addPlayerAdmin()">Add</button>
-    </div>
-  </div>
-
-  <div class="card" style="margin-top:12px">
-    <h3 style="margin-bottom:12px">Settings</h3>
-    <div class="form-group" style="margin-bottom:12px">
-      <label class="form-label">League Name</label>
-      <input type="text" id="league-name-input" value="${escAttr(state.leagueName)}" maxlength="60"/>
-    </div>
-    <button class="btn btn-primary" onclick="saveLeagueName()">Save Name</button>
-  </div>
-
-  <div class="card" style="margin-top:12px">
-    <h3 style="margin-bottom:12px">Admin PIN</h3>
-    <div class="pin-form">
-      <input type="password" id="new-pin-input" placeholder="New PIN (blank = no PIN)"/>
-      <button class="btn" onclick="savePinAdmin()">Set PIN</button>
-    </div>
-  </div>
-
-  <div class="card" style="margin-top:12px">
-    <h3 style="margin-bottom:8px">Danger Zone</h3>
-    <p style="font-size:13px;margin-bottom:12px">These actions cannot be undone.</p>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-danger" onclick="confirmResetMatches()">Reset All Matches</button>
-      <button class="btn btn-danger" onclick="confirmResetAll()">Reset Everything</button>
-    </div>
-  </div>
-  <button class="btn" style="margin-top:12px;width:100%" onclick="lockAdmin()">🔒 Lock Admin</button>`;
-}
-
-function initLeaderboard() {
-  // PIN input on enter
-  const pi = document.getElementById('pin-input');
-  if (pi) pi.addEventListener('keydown', e => { if(e.key==='Enter') tryUnlock(); });
-  const ni = document.getElementById('new-player-name');
-  if (ni) ni.addEventListener('keydown', e => { if(e.key==='Enter') addPlayerAdmin(); });
-}
-
-function tryUnlock() {
-  const input = document.getElementById('pin-input');
-  const val = input ? input.value.trim() : '';
-  const stored = getAdminPin();
-  if (!stored || val === stored) {
-    adminUnlocked = true;
-    if (!stored && val) { setAdminPin(val); }
-    document.getElementById('admin-area').innerHTML = renderAdminPanel();
-    initLeaderboard();
-    toast('Admin unlocked.', 'success');
-  } else {
-    toast('Wrong PIN.', 'error');
-    input.value = '';
-  }
-}
-
-function lockAdmin() {
-  adminUnlocked = false;
-  document.getElementById('admin-area').innerHTML = renderAdminArea();
-  initLeaderboard();
-}
-
-function addPlayerAdmin() {
-  const input = document.getElementById('new-player-name');
-  if (!input) return;
-  if (addPlayer(input.value)) {
-    input.value = '';
-    document.getElementById('admin-area').innerHTML = renderAdminPanel();
-    initLeaderboard();
-  }
-}
-
-function movePlayerUpAdmin(name) {
-  movePlayerUp(name);
-  document.getElementById('admin-area').innerHTML = renderAdminPanel();
-  initLeaderboard();
-}
-
-function movePlayerDownAdmin(name) {
-  movePlayerDown(name);
-  document.getElementById('admin-area').innerHTML = renderAdminPanel();
-  initLeaderboard();
-}
-
-function removePlayerAdmin(name) {
-  showModal('Remove Player', `Remove <strong>${escHtml(name)}</strong> from the ladder? Their match history will also be removed.`, () => {
-    removePlayer(name);
-    document.getElementById('admin-area').innerHTML = renderAdminPanel();
-    initLeaderboard();
-    toast(`${name} removed.`, 'success');
-  });
-}
-
-function saveLeagueName() {
-  const input = document.getElementById('league-name-input');
-  if (!input) return;
-  const val = input.value.trim();
-  if (val) { state.leagueName = val; saveState(); toast('League name saved.', 'success'); }
-  else toast('Enter a valid name.', 'error');
-}
-
-function savePinAdmin() {
-  const input = document.getElementById('new-pin-input');
-  if (!input) return;
-  setAdminPin(input.value.trim());
-  input.value = '';
-  toast('PIN updated.', 'success');
-}
-
-function confirmResetMatches() {
-  showModal('Reset All Matches', 'This will delete all match history and reset all stats. Rankings remain.', () => {
-    state.matches = [];
-    state.nextMatchId = 1;
-    recomputeStats();
-    saveState();
-    document.getElementById('admin-area').innerHTML = renderAdminPanel();
-    toast('Match history cleared.', 'success');
-  });
-}
-
-function confirmResetAll() {
-  showModal('Reset Everything', 'This deletes ALL data — players, matches, settings. The ladder will be empty.', () => {
-    state = defaultState();
-    saveState();
-    adminUnlocked = false;
-    navigate('leaderboard');
-    toast('All data cleared.', 'success');
-  });
-}
-
-/* ═══════════════════════════════════════════
-   ADD MATCH PAGE
-═══════════════════════════════════════════ */
-function renderAddMatch() {
-  const players = getRankedPlayers();
-  const opts = players.map(p => `<option value="${escAttr(p.name)}">${escHtml(p.name)} (#${p.rank})</option>`).join('');
-  const opts2 = players.map((p,i) => `<option value="${escAttr(p.name)}" ${i===1?'selected':''}>${escHtml(p.name)} (#${p.rank})</option>`).join('');
-
-  return `
-  <div class="page-header">
-    <h1>Add Match</h1>
-    <div class="sub">Best of 3 · First to 2 games</div>
-  </div>
-  <div class="container">
-    ${players.length < 2 ? `<div class="empty-state"><div class="empty-icon">👥</div><p>Add at least 2 players in Admin before logging matches.</p></div>` : `
-    <div class="match-form">
-      <div class="form-group">
-        <label class="form-label">Challenger</label>
-        <select id="challenger-select">${opts}</select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Defender</label>
-        <select id="defender-select">${opts2}</select>
-      </div>
-      <div id="challenge-hint"></div>
-
-      <div class="scoreboard">
-        <div class="score-card" id="c-card">
-          <div class="score-role">Challenger</div>
-          <div class="score-name" id="c-name">—</div>
-          <div class="score-num" id="c-score">0</div>
-          <div class="score-controls">
-            <button class="score-btn" id="c-minus">−</button>
-            <button class="score-btn" id="c-plus">+</button>
-          </div>
-          <div class="winner-badge" id="c-winner">🏆 Winner</div>
-        </div>
-        <div class="score-card" id="d-card">
-          <div class="score-role">Defender</div>
-          <div class="score-name" id="d-name">—</div>
-          <div class="score-num" id="d-score">0</div>
-          <div class="score-controls">
-            <button class="score-btn" id="d-minus">−</button>
-            <button class="score-btn" id="d-plus">+</button>
-          </div>
-          <div class="winner-badge" id="d-winner">🏆 Winner</div>
-        </div>
-      </div>
-
-      <div id="match-summary" class="hide"></div>
-
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button id="confirm-btn" class="btn btn-primary hide" style="flex:1">✓ Confirm Match</button>
-        <button class="btn" onclick="resetMatchForm()" style="flex:1">Reset</button>
-      </div>
-    </div>
-    `}
-  </div>`;
-}
-
-function initAddMatch() {
-  const cSel = document.getElementById('challenger-select');
-  const dSel = document.getElementById('defender-select');
-  if (!cSel || !dSel) return;
-
-  let cScore = 0, dScore = 0, finished = false;
-
-  function updateNames() {
-    const cName = document.getElementById('c-name');
-    const dName = document.getElementById('d-name');
-    if (cName) cName.textContent = cSel.value;
-    if (dName) dName.textContent = dSel.value;
-    updateChallengeHint();
-    resetScores();
-  }
-
-  function updateChallengeHint() {
-    const hint = document.getElementById('challenge-hint');
-    if (!hint) return;
-    const c = getPlayerByName(cSel.value);
-    const d = getPlayerByName(dSel.value);
-    if (!c || !d || c.name === d.name) { hint.innerHTML = ''; return; }
-    const rule = computeAllowed(c.rank, d.rank);
-    if (rule.allowed) {
-      const dir = rule.direction === 'up' ? `challenging up ${rule.distance} rank(s)` : `push-down challenge`;
-      hint.innerHTML = `<div class="challenge-hint hint-ok">✓ Valid: ${escHtml(c.name)} is ${dir} against ${escHtml(d.name)}</div>`;
-    } else {
-      const upDist = c.rank - d.rank;
-      const downDist = d.rank - c.rank;
-      let msg = '';
-      if (upDist > 2) msg = `too far above (${upDist} ranks, max 2)`;
-      else if (downDist > 1) msg = `too far below (${downDist} ranks, push-down max 1)`;
-      else msg = 'invalid matchup';
-      hint.innerHTML = `<div class="challenge-hint hint-err">✗ Invalid challenge: ${escHtml(c.name)} vs ${escHtml(d.name)} — ${msg}. Match will still be recorded.</div>`;
-    }
-  }
-
-  function resetScores() {
-    cScore = 0; dScore = 0; finished = false;
-    setScore('c', 0); setScore('d', 0);
-    document.getElementById('c-winner')?.classList.remove('show');
-    document.getElementById('d-winner')?.classList.remove('show');
-    document.getElementById('c-card')?.classList.remove('winner','loser');
-    document.getElementById('d-card')?.classList.remove('winner','loser');
-    document.getElementById('match-summary')?.classList.add('hide');
-    document.getElementById('confirm-btn')?.classList.add('hide');
-    setScoreBtnsDisabled(false);
-  }
-
-  window.resetMatchForm = resetScores;
-
-  function setScore(who, val) {
-    const el = document.getElementById(`${who}-score`);
-    if (el) el.textContent = val;
-  }
-
-  function setScoreBtnsDisabled(dis) {
-    ['c-plus','c-minus','d-plus','d-minus'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.disabled = dis;
-    });
-  }
-
-  function checkWinner() {
-    document.getElementById('c-winner')?.classList.toggle('show', cScore >= 2);
-    document.getElementById('d-winner')?.classList.toggle('show', dScore >= 2);
-
-    if (cScore >= 2 || dScore >= 2) {
-      finished = true;
-      setScoreBtnsDisabled(true);
-      const winName = cScore >= 2 ? cSel.value : dSel.value;
-      const loseName = cScore >= 2 ? dSel.value : cSel.value;
-      document.getElementById('c-card')?.classList.toggle('winner', cScore >= 2);
-      document.getElementById('c-card')?.classList.toggle('loser', cScore < 2);
-      document.getElementById('d-card')?.classList.toggle('winner', dScore >= 2);
-      document.getElementById('d-card')?.classList.toggle('loser', dScore < 2);
-
-      const c = getPlayerByName(cSel.value);
-      const d = getPlayerByName(dSel.value);
-      const rule = c && d ? computeAllowed(c.rank, d.rank) : null;
-      let movementHint = '';
-      if (rule && rule.allowed) {
-        if (rule.direction === 'up' && winName === cSel.value) movementHint = `<br>📈 Ladder swap: ${escHtml(winName)} moves up to #${d.rank}`;
-        else if (rule.direction === 'down' && winName === cSel.value) movementHint = `<br>⬇️ Push-down: ${escHtml(loseName)} drops a rank`;
-        else if (rule.direction === 'down' && winName === dSel.value) movementHint = `<br>↕️ Swap: ${escHtml(winName)} moves up`;
-      }
-
-      const summary = document.getElementById('match-summary');
-      if (summary) {
-        summary.className = 'match-summary';
-        summary.innerHTML = `<strong>${escHtml(winName)}</strong> wins ${cScore}–${dScore}.${movementHint}`;
-      }
-      document.getElementById('confirm-btn')?.classList.remove('hide');
-    } else {
-      finished = false;
-      document.getElementById('c-card')?.classList.remove('winner','loser');
-      document.getElementById('d-card')?.classList.remove('winner','loser');
-      document.getElementById('match-summary')?.classList.add('hide');
-      document.getElementById('confirm-btn')?.classList.add('hide');
-    }
-  }
-
-  function addPoint(who) {
-    if (finished) return;
-    if (who === 'c') { if (cScore >= 2) return; cScore++; setScore('c', cScore); }
-    else { if (dScore >= 2) return; dScore++; setScore('d', dScore); }
-    checkWinner();
-  }
-
-  function removePoint(who) {
-    if (finished) return;
-    if (who === 'c') { cScore = Math.max(0, cScore-1); setScore('c', cScore); }
-    else { dScore = Math.max(0, dScore-1); setScore('d', dScore); }
-    checkWinner();
-  }
-
-  document.getElementById('c-plus')?.addEventListener('click', () => addPoint('c'));
-  document.getElementById('c-minus')?.addEventListener('click', () => removePoint('c'));
-  document.getElementById('d-plus')?.addEventListener('click', () => addPoint('d'));
-  document.getElementById('d-minus')?.addEventListener('click', () => removePoint('d'));
-
-  cSel.addEventListener('change', () => {
-    if (cSel.value === dSel.value) {
-      const others = getRankedPlayers().filter(p => p.name !== cSel.value);
-      if (others.length) dSel.value = others[0].name;
-    }
-    updateNames();
-  });
-  dSel.addEventListener('change', updateNames);
-
-  document.getElementById('confirm-btn')?.addEventListener('click', () => {
-    if (!finished) return;
-    const btn = document.getElementById('confirm-btn');
-    btn.disabled = true;
-    btn.textContent = 'Saving…';
-
-    const result = submitMatch(cSel.value, dSel.value, cScore, dScore);
-    if (result) {
-      toast('Match saved! Ladder updated.', 'success');
-      setTimeout(() => navigate('leaderboard'), 800);
-    } else {
-      btn.disabled = false;
-      btn.textContent = '✓ Confirm Match';
-    }
-  });
-
-  updateNames();
-}
-
-/* ═══════════════════════════════════════════
-   MATCHES PAGE
-═══════════════════════════════════════════ */
-function renderMatches() {
-  const ms = state.matches;
-  return `
-  <div class="page-header">
-    <h1>Match History</h1>
-    <div class="sub">${ms.length} matches recorded</div>
-  </div>
-  <div class="container">
-    <div class="search-bar"><input type="text" id="match-search" placeholder="Search player…"></div>
-    <div id="matches-list">
-      ${ms.length === 0 ? `<div class="empty-state"><div class="empty-icon">📋</div><p>No matches yet.</p></div>` :
-        ms.map(m => renderMatchItem(m)).join('')
-      }
-    </div>
-  </div>`;
-}
-
-function renderMatchItem(m) {
-  const isWinnerChallenger = m.winner === m.challenger;
-  const winName = m.winner;
-  const loseName = m.winner === m.challenger ? m.defender : m.challenger;
-  const moveBadge = m.movement === 'swap' ? `<span class="match-badge swap">↕ Swap</span>` :
-                    m.movement === 'push' ? `<span class="match-badge push">⬇ Push</span>` :
-                    m.movement === 'none' ? `<span class="match-badge none">No change</span>` : '';
-  const dirBadge = m.allowed
-    ? (m.direction === 'up' ? `<span class="match-badge challenge-up">▲ Up</span>` : `<span class="match-badge push">▼ Push-Down</span>`)
-    : `<span class="match-badge invalid">⚠ Invalid</span>`;
-
-  return `<div class="match-item" data-id="${m.id}">
-    <div>
-      <div class="match-players">
-        <span class="match-winner-name">${escHtml(winName)}</span>
-        <span class="match-vs">def.</span>
-        <span class="match-loser-name">${escHtml(loseName)}</span>
-      </div>
-      <div class="match-meta">
-        ${dirBadge}${moveBadge}
-        <span style="color:var(--subtle)">${escHtml(m.challenger)} challenged ${escHtml(m.defender)}</span>
-      </div>
-    </div>
-    <div>
-      <div class="match-score">${escHtml(m.score)}</div>
-      <div class="match-date">${fmtDate(m.date)}</div>
-      ${adminUnlocked ? `<button class="delete-match-btn" onclick="deleteMatchAdmin(${m.id})" title="Delete">✕</button>` : ''}
-    </div>
-  </div>`;
-}
-
-function initMatches() {
-  const search = document.getElementById('match-search');
-  if (search) {
-    search.addEventListener('input', () => {
-      const q = search.value.toLowerCase().trim();
-      document.querySelectorAll('.match-item').forEach(el => {
-        el.style.display = !q || el.textContent.toLowerCase().includes(q) ? '' : 'none';
-      });
-    });
-  }
-}
-
-function deleteMatchAdmin(id) {
-  showModal('Delete Match', 'Delete this match? Stats will be recalculated, but ladder positions won\'t be reversed.', () => {
-    deleteMatch(id);
-    navigate('matches');
-    toast('Match deleted.', 'success');
-  });
-}
-
-/* ═══════════════════════════════════════════
-   AWARDS PAGE
-═══════════════════════════════════════════ */
-function renderAwards() {
-  const awards = computeAwards();
-  return `
-  <div class="page-header">
-    <h1>Awards</h1>
-    <div class="sub">Computed from live match data</div>
-  </div>
-  <div class="container">
-    <div id="awards-list">
-      ${awards.length === 0 ? `<div class="empty-state"><div class="empty-icon">🏆</div><p>Play some matches to earn awards.</p></div>` :
-        awards.map(a => `
-        <div class="award-card ${a.gold ? 'gold-award' : ''}">
-          <div class="award-icon">${a.icon}</div>
-          <div class="award-body">
-            <div class="award-title">${escHtml(a.title)}</div>
-            <div class="award-name">${escHtml(a.name)}</div>
-            <div class="award-detail">${escHtml(a.detail)}</div>
-          </div>
-        </div>`).join('')
-      }
-    </div>
-  </div>`;
-}
-
-/* ═══════════════════════════════════════════
-   RULES PAGE
-═══════════════════════════════════════════ */
-function renderRules() {
-  const rules = [
-    { title: '⚡ Quick Summary', open: true, body: `
-      <p><strong>Challenge Up:</strong> You can challenge up to <strong>2 ranks above</strong> you.</p>
-      <p><strong>Push-Down:</strong> You can challenge <strong>1 rank below</strong> you.</p>
-      <p><strong>Best of 3:</strong> First to 11 points, win by 2.</p>
-      <p><strong>7 days inactive</strong> → drop 1 rank. 14 days → 2 ranks. 21+ days → bottom.</p>` },
-    { title: '👥 Eligibility', body: `
-      <p>New players join at the bottom of the ladder.</p>
-      <p>Rank 1 is the top. Rankings update automatically after every logged match.</p>` },
-    { title: '⚔️ Challenge Rules', body: `
-      <p><strong>Rule 1 — Challenge Up:</strong> Challenge up to <strong>two ranks above</strong>.</p>
-      <p><strong>Rule 2 — Push-Down:</strong> Challenge <strong>one rank below</strong> you.</p>
-      <p><strong>Rule 3 — No back-to-back repeats:</strong> Can't challenge the same person twice in a row.</p>
-      <p><strong>Rule 4 — Chill window:</strong> After a loss, wait 6–8 hours before re-challenging.</p>
-      <div class="rule-example">
-        <strong>Example:</strong><br>
-        #4 Judels · #5 Owen · #6 Cam<br><br>
-        Owen (#5) can challenge: Judels (#4) or the person at #3 (up), or Cam (#6) (push-down).
-      </div>` },
-    { title: '🏓 Match Format', body: `
-      <p>Matches are <strong>Best of 3 games</strong> — first to win 2 games wins the match.</p>
-      <p>Each game is <strong>first to 11 points</strong>, win by 2.</p>` },
-    { title: '📊 Ranking Movement', body: `
-      <p><strong>A) Challenge Up (you are lower ranked):</strong></p>
-      <ul><li><strong>Win:</strong> You swap positions.</li><li><strong>Lose:</strong> Nothing changes.</li></ul>
-      <p><strong>B) Push-Down Challenge (you are higher ranked by 1):</strong></p>
-      <ul><li><strong>Win:</strong> Defender gets pushed down one rank.</li><li><strong>Lose:</strong> You swap (they beat you).</li></ul>
-      <div class="rule-example">
-        <strong>Push-down example:</strong><br>
-        #5 Owen challenges #6 Cam.<br>
-        Owen wins → Cam drops to #7. Owen stays #5.<br>
-        Owen loses → Owen and Cam swap. Cam becomes #5.
-      </div>` },
-    { title: '⏱️ Forfeits', body: `
-      <p>A challenged player must play within <strong>two working days</strong>.</p>
-      <p>No response = forfeit. Don't dodge. Keep the ladder alive.</p>` },
-    { title: '😴 Inactivity', body: `
-      <ul>
-        <li><strong>7+ days inactive:</strong> drop 1 rank</li>
-        <li><strong>14+ days inactive:</strong> drop 2 ranks</li>
-        <li><strong>21+ days inactive:</strong> drop to the bottom</li>
-      </ul>
-      <p>Any recorded match (win or loss) resets your inactivity clock.</p>` },
-    { title: '🏠 House Rules', body: `
-      <p><strong>Serves:</strong> Must be cross-court.</p>
-      <p><strong>Net:</strong> Net and over = re-serve. Net off the table = your opponent's point.</p>
-      <p><strong>Takeovers:</strong> Two allowed; third must be legal or you lose the point.</p>` },
-    { title: '🤝 Disputes', body: `
-      <p>Replay any unclear point. Continued disagreement = replay the game.</p>
-      <p><strong>Golden rule:</strong> Keep it lekker — no prolonged arguments.</p>` },
-    { title: '🎖️ Season & Awards', body: `
-      <p>Each season runs for <strong>one month</strong>.</p>
-      <p>End-of-season recognition:</p>
-      <ul>
-        <li><strong>Ladder Champion:</strong> Rank 1</li>
-        <li><strong>Most Successful Challenger:</strong> Most challenge wins</li>
-        <li><strong>Giant Killer:</strong> Most wins against higher-ranked players</li>
-        <li><strong>Grinder:</strong> Most matches played</li>
-      </ul>` },
-    { title: '📜 Code of Conduct', body: `
-      <p>Play hard but have fun. Trash talk within reason is encouraged; rage quitting is prohibited.</p>
-      <p>The loser retrieves balls. Respect the table, the ladder, and your opponents.</p>` },
+/* ─── RULES ─── */
+function rRU(){
+  const secs=[
+    {t:'⚡ Quick Summary',open:true,b:`<p><strong>Challenge Up:</strong> Up to 2 ranks above you.</p><p><strong>Push-Down:</strong> 1 rank below you.</p><p><strong>Best of 3:</strong> First to 11 points, win by 2.</p><p><strong>7 days inactive</strong> → drop 1 rank. 14 days → 2 ranks. 21+ → bottom.</p>`},
+    {t:'⚔️ Challenge Rules',b:`<p><strong>Up:</strong> Challenge up to 2 ranks above.</p><p><strong>Push-Down:</strong> Challenge 1 rank below.</p><p><strong>No back-to-back repeats.</strong></p><p><strong>Chill window:</strong> 6–8 hrs after a loss.</p><div class="rule-eg"><strong>Example:</strong> #4 Judels · #5 Owen · #6 Cam<br>Owen (#5) can challenge: Judels (#4) or #3 (up), or Cam (#6) (push-down).</div>`},
+    {t:'📊 Ranking Movement',b:`<p><strong>Challenge Up:</strong> Win → swap. Lose → nothing changes.</p><p><strong>Push-Down:</strong> Win → defender drops 1 more rank. Lose → you swap.</p><div class="rule-eg"><strong>Push-down:</strong> Owen (#5) vs Cam (#6).<br>Owen wins → Cam drops to #7.<br>Owen loses → Cam becomes #5.</div>`},
+    {t:'🏓 Match Format',b:`<p>Best of 3 games. First to 11 points, win by 2.</p>`},
+    {t:'⏱️ Forfeits',b:`<p>Challenged player must play within <strong>two working days</strong>. No response = forfeit.</p>`},
+    {t:'😴 Inactivity',b:`<ul><li><strong>7+ days</strong> inactive → drop 1 rank</li><li><strong>14+ days</strong> → drop 2 ranks</li><li><strong>21+ days</strong> → drop to bottom</li></ul><p>Any match (win or loss) resets your clock.</p>`},
+    {t:'🏠 House Rules',b:`<p><strong>Serves:</strong> Cross-court only.</p><p><strong>Net + over:</strong> Re-serve. <strong>Net + off table:</strong> Opponent's point.</p><p><strong>Takeovers:</strong> Two allowed; third must be legal.</p>`},
+    {t:'🤝 Disputes',b:`<p>Replay unclear points. Continued dispute = replay the game. Keep it lekker.</p>`},
+    {t:'🎖️ Season & Awards',b:`<p>One month per season. Awards: Champion, Top Scorer, Giant Killer, Grinder, Best Win Rate.</p>`},
+    {t:'📜 Code of Conduct',b:`<p>Play hard, have fun. Trash talk welcome; rage quitting prohibited. Loser retrieves balls.</p>`},
   ];
-
-  return `
-  <div class="page-header">
-    <h1>Rules</h1>
-    <div class="sub">How the ladder works</div>
-  </div>
+  return`<div class="page-header"><h1>Rules</h1><div class="sub">How the ladder works</div></div>
   <div class="container">
-    <div class="search-bar"><input type="text" id="rules-search" placeholder="Search rules…"></div>
-    <div id="rules-container">
-      ${rules.map((r,i) => `
-        <div class="rule-section card ${r.open ? 'open' : ''}" data-idx="${i}">
-          <div class="rule-header" onclick="toggleRule(this)">
-            <h3>${escHtml(r.title)}</h3>
-            <span class="rule-chevron">▾</span>
-          </div>
-          <div class="rule-body">${r.body}</div>
-        </div>`).join('')}
-    </div>
+    <div class="search-wrap"><input type="text" id="rsrch" placeholder="Search rules…"></div>
+    ${secs.map(s=>`<div class="rule-section card ${s.open?'open':''}">
+      <div class="rule-hdr" onclick="this.closest('.rule-section').classList.toggle('open')">
+        <h3>${x(s.t)}</h3><span class="rule-chev">▾</span>
+      </div>
+      <div class="rule-body">${s.b}</div>
+    </div>`).join('')}
   </div>`;
 }
-
-function initRules() {
-  const search = document.getElementById('rules-search');
-  if (search) {
-    search.addEventListener('input', () => {
-      const q = search.value.toLowerCase();
-      document.querySelectorAll('.rule-section').forEach(el => {
-        el.style.display = !q || el.textContent.toLowerCase().includes(q) ? '' : 'none';
-      });
-    });
-  }
+function iRU(){
+  const s=document.getElementById('rsrch');
+  if(s)s.addEventListener('input',()=>{const q=s.value.toLowerCase();document.querySelectorAll('.rule-section').forEach(el=>{el.style.display=!q||el.textContent.toLowerCase().includes(q)?'':'none';});});
 }
 
-function toggleRule(header) {
-  header.closest('.rule-section').classList.toggle('open');
+/* ─── UI HELPERS ─── */
+function toast(msg,type='info',dur=3000){
+  const h=document.getElementById('toast-host');const e=document.createElement('div');
+  e.className=`toast ${type}`;e.textContent=msg;e.onclick=()=>e.remove();h.appendChild(e);
+  setTimeout(()=>{e.style.opacity='0';e.style.transform='translateY(6px)';e.style.transition='opacity .2s,transform .2s';setTimeout(()=>e.remove(),220);},dur);
 }
+function modal(title,msg,onOk,okTxt='Confirm',danger=true){
+  const ov=document.createElement('div');ov.className='moverlay';
+  ov.innerHTML=`<div class="mbox"><h3>${title}</h3><p>${msg}</p><div class="mactions"><button class="btn" id="mc">Cancel</button><button class="btn ${danger?'btn-danger':'btn-primary'}" id="mk">${okTxt}</button></div></div>`;
+  document.body.appendChild(ov);
+  ov.querySelector('#mc').onclick=()=>ov.remove();
+  ov.querySelector('#mk').onclick=()=>{ov.remove();onOk();};
+  ov.onclick=e=>{if(e.target===ov)ov.remove();};
+}
+function x(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function xa(s){return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+function fd(d){try{return new Date(d).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});}catch{return String(d||'');}}
 
-/* ═══════════════════════════════════════════
-   UTILITIES
-═══════════════════════════════════════════ */
-function escHtml(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function escAttr(s) {
-  return String(s||'').replace(/'/g,'&#39;').replace(/"/g,'&quot;');
-}
-function fmtDate(d) {
-  try {
-    return new Date(d).toLocaleDateString(undefined, { day:'numeric', month:'short', year:'numeric' });
-  } catch { return String(d||''); }
-}
-
-/* ═══════════════════════════════════════════
-   BOOT
-═══════════════════════════════════════════ */
-loadState();
-renderPage();
+/* ─── INIT ─── */
+loadCfg();
+if(cfg&&cfg.owner&&cfg.repo&&cfg.token){boot();}
+else{document.getElementById('setup-screen').style.display='flex';}
 </script>
 </body>
 </html>
